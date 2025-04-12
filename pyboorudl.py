@@ -132,6 +132,7 @@ class Downloader:
         self.post_id = 0
         self.ignore_post_id = True
         self.limit = 100
+        self.threads = 5
 
         self.retry = retry
         self.timeout = timeout
@@ -287,6 +288,16 @@ response
         self.timeout = timeout
 
 
+    def set_threads(self, threads: int):
+        """
+        Sets the number of threads to be used as default on threaded_download().
+
+        Args:
+            threads (int): The number of threads to use.
+        """
+        self.threads = threads
+
+
     def _generate_url(self):
         return UrlBuilder(self.endpoint, self.tag_str, self.json, self.page, self.limit, self.post_id, self.post_cid, self.ignore_post_id, self.ignore_post_cid).build_url()
     
@@ -408,7 +419,7 @@ response
         return [downloads, self.content, self.relevant_content]
     
 
-    def threaded_download(self, make_dir: bool = True, threads: int = 5):
+    def threaded_download(self, make_dir: bool = True, threads: int = 0) -> list:
         """
         Downloads the posts fetched from the Rule34/Gelbooru API using multiple threads.
 
@@ -419,6 +430,10 @@ response
         Returns:
             list: Same as download()
         """
+
+        if threads == 0:
+            threads = self.threads
+
         response = self.fetch(threaded=True)
 
         content = response[0]
