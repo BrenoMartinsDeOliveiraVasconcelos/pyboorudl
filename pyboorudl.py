@@ -356,7 +356,10 @@ response
         relevant_content = content
 
         if self.selection == GELBOORU:
-            relevant_content = content["post"]
+            try:
+                relevant_content = content["post"]
+            except KeyError:
+                return False
 
         if not threaded:
             self.content = content
