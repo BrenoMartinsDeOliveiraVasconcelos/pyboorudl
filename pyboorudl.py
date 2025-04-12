@@ -434,6 +434,9 @@ response
 
         response = self.fetch(threaded=True)
 
+        if not response:
+            return False
+
         content = response[0]
         relevant_content = response[1]
 
