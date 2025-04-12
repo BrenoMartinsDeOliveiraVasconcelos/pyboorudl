@@ -3,6 +3,7 @@ import json
 import os
 from concurrent.futures import ThreadPoolExecutor
 import time
+import random
 
 # CONSTANTS
 
@@ -111,15 +112,6 @@ class Downloader:
             "rule34": "https://api.rule34.xxx/index.php?page=dapi&s=post&q=index",
             "gelbooru": "https://gelbooru.com//index.php?page=dapi&s=post&q=index"
         }
-
-        self.different_keys = {
-            "gelbooru": {
-                "hash": "md5"
-                },
-            "rule34": {
-                "hash": "hash"
-                }
-        }
         
         self.selection = selection
         self.endpoint = self.supported_endpoints[self.selection]
@@ -139,7 +131,6 @@ class Downloader:
         
         self.content = []
         self.relevant_content = []
-        self.md5sum_key = self.different_keys[self.selection]["hash"]
 
 
 
@@ -273,7 +264,6 @@ response
         """
         self.endpoint = self.supported_endpoints[booru]
         self.selection = booru
-        self.md5sum_key = self.different_keys[self.selection]["hash"]
 
 
     def set_wait_time(self, wait_time: int, timeout: int = 60):
@@ -308,10 +298,10 @@ response
                     "name": file_name,
                     "owner": post["owner"],
                     "tags": post["tags"].split(" "),
-                    "md5sum": post[self.md5sum_key],
                     "width": post["width"],
                     "height": post["height"],
-                    "size": os.stat(file_path).st_size
+                    "size": os.stat(file_path).st_size,
+                    "url": post["file_url"]
                 }
     
 
@@ -319,13 +309,18 @@ response
         if "file_url" in post:
 
             file_url = post["file_url"]
-            file_name = post["image"]
         
             connection = HttpRequest(self.retry, self.timeout)
             connection.set_url(file_url)
             response = connection.get()
 
-            file_path = f"{self.download_path}/{file_name}"
+            file_path = ""
+            while True:
+                file_name = random.randint(0, int("9"*250))
+                file_path = os.path.join(self.download_path, f"{file_name}."+post["image"].split(".")[-1]) #f"{self.download_path}/{file_name}"
+
+                if not os.path.exists(file_path):
+                    break
 
             if make_dir:
                 os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -384,8 +379,7 @@ response
         owner (str): The owner of the downloaded file.
         
         tags (list): A list with the tags of the downloaded file.
-        
-        md5sum (str): The md5sum of the downloaded file.
+
 
         width (int): The width of the downloaded file.
 
@@ -410,11 +404,12 @@ response
         downloads = []
 
         for post in self.relevant_content:
-            download = self._download_post(post, make_dir)
-            if download:
-                downloads.append(download)
-            else:
-                return False
+            try:
+                download = self._download_post(post, make_dir)
+                if download:
+                    downloads.append(download)
+            except Exception as e:
+                continue
             
         return [downloads, self.content, self.relevant_content]
     
@@ -446,8 +441,12 @@ response
 
         with ThreadPoolExecutor(max_workers=threads) as executor:
             for post in relevant_content:
-                download = executor.submit(self._download_post, post, make_dir)
-                downloads.append(download.result())
+                try:
+                    download = executor.submit(self._download_post, post, make_dir)
+                    if download:
+                        downloads.append(download.result())
+                except Exception as e:
+                    continue
 
         return [downloads, content, relevant_content]
 
