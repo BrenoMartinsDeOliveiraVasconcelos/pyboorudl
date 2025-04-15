@@ -370,7 +370,7 @@ response
 
     def download(self, make_dir: bool = True) -> list:
         """
-        Downloads the posts fetched from the Rule34/Gelbooru API.
+        Downloads posts from the Rule34/Gelbooru API using a single thread. The page downloaded is set using the set_page() method.
 
         It will return a list with the following elements:
         - A list with dictionaries about each downloaded file containing:
@@ -455,7 +455,40 @@ response
                     continue
 
         return [downloads, content, relevant_content]
+    
+
+    def loop_download(self, start_page: int, end_page: int, make_dir: bool = True, threads: int = 0) -> list:
+        """
+        Download automatically a range of pages using threads. The self.page attribute will be set to the last page downloaded.
+
+        Args:
+            start_page (int): The start page to download. (Paging starts at 0)
+            end_page (int): The end page to download. (This will be the last page downloaded)
+            make_dir (bool, optional): Whether to create the directory if it does not exist. Defaults to True.
+            threads (int, optional): The number of threads to use. Defaults to 5.
+
+        Returns:
+            list: List of resulting outputs of threaded_download()
+        """
+
+        self.set_page(start_page)
+        
+        if threads > 0:
+            self.set_threads(threads)
+        else:
+            threads = self.threads
+
+        outputs = []
+
+        for self.page in range(start_page, end_page+1):
+            output = self.threaded_download(make_dir, threads)
+            if output:
+                outputs.append(output)
+
+        return outputs
+
 
 
 if __name__ == "__main__":
     print("This is a module and should not be run directly.")
+
