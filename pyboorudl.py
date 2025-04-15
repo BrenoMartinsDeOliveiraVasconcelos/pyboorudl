@@ -457,14 +457,17 @@ response
         return [downloads, content, relevant_content]
     
 
-    def loop_download(self, start_page: int, end_page: int, make_dir: bool = True, threads: int = 0) -> list:
+    def loop_download(self, start_page: int, end_page: int, make_dir: bool = True, threaded: bool = True, threads: int = 0) -> list:
         """
-        Download automatically a range of pages using threads. The self.page attribute will be set to the last page downloaded.
+        Download automatically a range of pages. By default, downloads on thread. Set threaded to false to disable threading.
+        
+        Note: The self.page attribute will be set to the last page downloaded.
 
         Args:
             start_page (int): The start page to download. (Paging starts at 0)
             end_page (int): The end page to download. (This will be the last page downloaded)
             make_dir (bool, optional): Whether to create the directory if it does not exist. Defaults to True.
+            threaded (bool, optional): Whether to use threading. Defaults to True.
             threads (int, optional): The number of threads to use. Defaults to 5.
 
         Returns:
@@ -481,7 +484,7 @@ response
         outputs = []
 
         for self.page in range(start_page, end_page+1):
-            output = self.threaded_download(make_dir, threads)
+            output = self.threaded_download(make_dir, threads) if threaded else self.download(make_dir)
             if output:
                 outputs.append(output)
 
@@ -491,4 +494,4 @@ response
 
 if __name__ == "__main__":
     print("This is a module and should not be run directly.")
-
+    
