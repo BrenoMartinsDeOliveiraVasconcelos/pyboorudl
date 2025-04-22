@@ -23,7 +23,6 @@ class UrlBuilder:
         self.ignore_post_id = ignore_post_id
         self.ignore_post_cid = ignore_post_cid
 
-
     def build_url(self) -> str:
         """
         Builds a URL for the Rule34/Gelbooru API query using the class's properties.
@@ -125,6 +124,9 @@ class Downloader:
         self.ignore_post_id = True
         self.limit = 100
         self.threads = 5
+
+
+        self.verbose = False
 
         self.retry = retry
         self.timeout = timeout
@@ -286,6 +288,16 @@ response
             threads (int): The number of threads to use.
         """
         self.threads = threads
+
+
+    def enable_verbose(self, state: bool = True):
+        """
+        Enables or disables verbose mode for the Rule34/Gelbooru API query.
+
+        Args:
+            state (bool, optional): Whether to enable verbose mode. Defaults to True.
+        """
+        self.verbose = state
 
 
     def _generate_url(self):
