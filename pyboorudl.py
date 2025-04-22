@@ -418,7 +418,17 @@ response
 
         downloads = []
 
+        number_posts = len(self.relevant_content)
+        count = 0
+        percent = 0
+
         for post in self.relevant_content:
+
+            if self.verbose:
+                connt += 1
+                percent = (count / number_posts) * 100
+                print(f"Downloading post {count}/{number_posts} on page {self.page} with tags: {self.tag_str} ({percent:.2f}%)")
+
             try:
                 download = self._download_post(post, make_dir)
                 if download:
@@ -457,8 +467,18 @@ response
 
         downloads = []
 
+        total = len(relevant_content) 
+        count = 0
+        percent = 0
+
         with ThreadPoolExecutor(max_workers=threads) as executor:
             for post in relevant_content:
+                if self.verbose:
+                    count += 1
+                    percent = (count / total) * 100
+
+                    print(f"Downloading post {count}/{total} on page {self.page} with tags: {self.tag_str} ({percent:.2f}%)")
+
                 try:
                     download = executor.submit(self._download_post, post, make_dir)
                     if download:
