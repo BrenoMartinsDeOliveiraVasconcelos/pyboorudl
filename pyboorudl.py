@@ -1,540 +1,204 @@
+from pyboorudl import pyboorudl as pyb
 import requests
 import json
+import datetime
 import os
-from concurrent.futures import ThreadPoolExecutor
-import time
-import random
+import traceback
 import hashlib
-
-# CONSTANTS
-
-RULE34 = "rule34"
-GELBOORU = "gelbooru"
-SAFEBOORU = "safebooru"
+import time
+import micromath
+from sys import argv as args
 
 
-def get_hash(path) -> str:
-    return hashlib.md5(open(path, "rb").read()).hexdigest()
+def log(message: str, severity: int):
+    """
+    Logs a message to a file named "log.txt" and prints it to the console.
 
+    The message will be prefixed with the current date and time, and a label
+    indicating the severity of the message.
 
-class UrlBuilder:
-    def __init__(self, endpoint: str, tag_str: str, json: str, page: int, limit: int, post_id: int, cid: int, ignore_post_id: bool, ignore_post_cid: bool):
-        self.endpoint = endpoint
-        self.tag_str = tag_str
-        self.json = json
-        self.page = page
-        self.limit = limit
-        self.id = post_id
-        self.cid = cid
-
-        self.ignore_post_id = ignore_post_id
-        self.ignore_post_cid = ignore_post_cid
-
-    def build_url(self) -> str:
-        """
-        Builds a URL for the Rule34/Gelbooru API query using the class's properties.
-
-        This method will construct a URL based on the class's properties and return it as a string. The properties used are the endpoint, json, page, limit, tag_str, id, cid, ignore_post_id, and ignore_post_cid.
-
-        Returns:
-            str: The constructed URL.
-        """
-        url = f"{self.endpoint}&json={self.json}&pid={self.page}&limit={self.limit}"
-
-        if self.tag_str != "":
-            url += f"&tags={self.tag_str}"
-
-        if not self.ignore_post_id:
-            url += f"&id={self.id}"
-
-        if not self.ignore_post_cid:
-            url += f"&cid={self.cid}"
-
-        return url
+    Codes:
     
+    - 0: INFO
+    - 1: WARNING
+    - 2: ERROR
+    - 3: CRITICAL
 
-class HttpRequest:
-    def __init__(self, retry: int = 3, timeout: int = 60):
-        self.url = ""
-        self.retry = retry
-        self.timeout = timeout
+    If the file "log.txt" does not exist, it will be created.
 
+    Args:
+        message (str): The message to log.
+        severity (int): The severity of the message, with 0 being "INFO", 1 being
+            "WARNING", and 2 being "ERROR".
+    """
+    types = ["INFO", "WARNING", "ERROR", "CRITICAL"]
 
-    def set_url(self, url: str):
-        """
-        Sets the URL to perform the GET request on.
+    msg = f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [{types[severity]}] {message}"
 
-        Args:
-            url (str): The URL to set.
-
-        Returns:
-            None
-        """
-        self.url = url
+    if not os.path.exists("log.txt"):
+        open("log.txt", "w+").close()
 
     
-    def get(self):
-        """
-        Performs a GET request on the URL set in the HttpRequest object.
+    with open("log.txt", "a") as f:
+        f.write(msg + "\n")
 
-        This method will retry the GET request up to the retry limit if a connection error or HTTP error occurs. The retry limit can be set by passing the retry parameter when creating an HttpRequest object. If the retry limit is exceeded, the method will raise the last exception that occurred.
+    
+    print(msg)
 
-        Args:
-            None
 
-        Returns:
-            requests.Response: The response object from the GET request.
+def check_duplicates(hashes):
+    # Check for duplicates and return if there are any
+    seen_md5s = set()
+    unique_hashes = []
+    duplicates_removed = 0
 
-        Raises:
-            requests.exceptions.ConnectionError: A connection error occurred while performing the GET request and the retry limit was exceeded.
-            requests.exceptions.HTTPError: An HTTP error occurred while performing the GET request and the retry limit was exceeded.
-        """
-
-        if self.url == "":
-            raise Exception("No URL set")
-
-        retry = self.retry
-        timeout = self.timeout
-        sleep_time = 0
-
-        while True:
+    for h in hashes:
+        md5 = h["md5"]
+        if md5 not in seen_md5s:
+            unique_hashes.append(h)
+            seen_md5s.add(md5)
+        else:
+            hash_path = h["path"]
+            log(f"Duplicate file found (keeping first): {hash_path}", 1)
             try:
-                response = requests.get(self.url)
-                response.raise_for_status()
-                return response
-            except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
-                sleep_time += retry
-
-                if sleep_time >= timeout:
-                    raise e
-
-                time.sleep(sleep_time)
+                os.remove(hash_path)
+                duplicates_removed += 1
+            except FileNotFoundError:
+                log(f"Marked as duplicated but file is not on filesystem!", 1)
                 continue
 
+    log(f"Removed {duplicates_removed} duplicates (keeping the first occurrence).", 0)
+    json.dump(unique_hashes, open("hashes.json", "w"), indent=4)
 
-class Downloader:
-    def __init__(self, download_path: str, selection: str = RULE34, retry: int = 3, timeout: int = 60):
-        self.supported_endpoints = {
-            "rule34": "https://api.rule34.xxx/index.php?page=dapi&s=post&q=index",
-            "gelbooru": "https://gelbooru.com/index.php?page=dapi&s=post&q=index",
-            "safebooru": "https://safebooru.org/index.php?page=dapi&s=post&q=index",
-        }
-        
-        self.selection = selection
-        self.endpoint = self.supported_endpoints[self.selection]
-        self.download_path = download_path
-        self.tag_str = ""
-        self.json = "1"
-        self.post_cid = 0
-        self.ignore_post_cid = True
-        self.page = 1
-        self.post_id = 0
-        self.ignore_post_id = True
-        self.limit = 100
-        self.threads = 5
-        self.download_num = 0
-
-
-        self.verbose = False
-
-        self.retry = retry
-        self.timeout = timeout
-        
-        self.content = []
-        self.relevant_content = []
-
-
-
-    def set_tags(self, included_tags: list, excluded_tags: list = []):
-        """
-        Sets the tags for the Rule34/Gelbooru API query. Adds to the existing tag string if already set. Use clear_tags() to reset the tag string.
-
-        This method constructs a tag string by adding included and excluded tags.
-        Included tags are prefixed with '+' and excluded tags with '-'.
-        The resulting tag string is stored in the `self.tag_str` attribute.
-
-        Args:
-            included_tags (list): A list of tags to include in the search.
-            excluded_tags (list, optional): A list of tags to exclude from the search.
-        """
-
-        # Add included tags
-        for tag in included_tags:
-            self.tag_str += f"+{tag}"
-
-        # Add excluded tags
-        for tag in excluded_tags:
-            self.tag_str += f"+-{tag}"
-
-        # Remove first + if it exists
-        self.tag_str = self.tag_str[1:] if self.tag_str.startswith("+") else self.tag_str
-
-    
-    def clear_tags(self):
-        """
-        Clears the tag string for the Rule34/Gelbooru API query.
-        """
-        self.tag_str = ""
-
-
-    def set_cid(self, cid: int):
-        """
-        Sets the post change ID for the Rule34/Gelbooru API query. Value is Unix time, so it will probably have posts with same ID.
-
-        Args:
-            cid (int): The post ID to search for.
-        """
-        self.post_cid = cid
-        self.ignore_post_cid = False
-
-    
-    def unset_cid(self):
-        """
-        Resets the post ID and ignores it in the Rule34/Gelbooru API query.
-        """
-        self.post_cid = 0
-        self.ignore_post_cid = True
-
-
-    def set_id(self, id: int):
-        """
-        Sets the post ID for the Rule34/Gelbooru API query.
-
-        Args:
-            id (int): The post ID to search for.
-        """
-        self.post_id = id
-        self.ignore_post_id = False
-
-    
-    def unset_id(self):
-        """
-        Resets the post ID and ignores it in the Rule34/Gelbooru API query.
-        """
-        self.post_id = 0
-        self.ignore_post_id = True
+    return True if duplicates_removed > 0 else False
 
-    
-    def page_next(self):
-        """
-        Increments the page number for the Rule34/Gelbooru API query.
 
-        This method increments the page number by one and does not accept any arguments.
-        """
-        self.page += 1
+def get_group(path, files_per_group):
+    current_group = 0
 
-    
-    def page_prev(self):
-        """
-        Decrements the page number for the Rule34/Gelbooru API query.
+    try:
+        files = os.listdir(path)
+        for f in files:
+            full_path = os.path.join(path, f)
+            if os.path.isdir(full_path) and micromath.is_integer(f):
+                num_files = len(os.listdir(full_path))
 
-        This method decrements the page number by one and does not accept any arguments.
-        """
-        self.page -= 1
+                if num_files > files_per_group:
+                    current_group += 1
+    except FileNotFoundError:
+        pass
 
-        if self.page < 0:
-            self.page = 0
-
-
-    def set_page(self, page: int):
-        """
-        Sets the page number for the Rule34/Gelbooru API query.
-
-        Args:
-            page (int): The page number to set.
-        """
-        self.page = page
-
-
-    def set_limit(self, limit: int):
-        """
-        Sets the limit of posts fetched for the Rule34/Gelbooru API query.
-
-        Args:
-            limit (int): The limit to set.
-        """
-        self.limit = limit
-
+    return str(current_group).zfill(4)
 
-    def change_download_path(self, path: str):
-        """
-        Changes the download path for the Rule34/Gelbooru API query.
 
-        Args:
-            path (str): The new download path.
-        """
-        self.download_path = path
-
-
-    def set_booru(self, booru: str):
-        """
-        Sets the booru for the Rule34/Gelbooru API query.        height (int): The height of the downloaded file.
-response
-        Args:
-            booru (str): The booru to set.
-        """
-        self.endpoint = self.supported_endpoints[booru]
-        self.selection = booru
-
-
-    def set_wait_time(self, wait_time: int, timeout: int = 60):
-        """
-        Sets the wait time for the Rule34/Gelbooru API query.
-
-        Args:
-            wait_time (int): The wait time in seconds.
-            timeout (int, optional): The timeout for the API request in seconds.
-        """
-        self.retry = wait_time
-        self.timeout = timeout
-
-
-    def set_threads(self, threads: int):
-        """
-        Sets the number of threads to be used as default on threaded_download().
-
-        Args:
-            threads (int): The number of threads to use.
-        """
-        self.threads = threads
-
-
-    def enable_verbose(self, state: bool = True):
-        """
-        Enables or disables verbose mode for the Rule34/Gelbooru API query.
-
-        Args:
-            state (bool, optional): Whether to enable verbose mode. Defaults to True.
-        """
-        self.verbose = state
-
-
-    def _generate_url(self):
-        return UrlBuilder(self.endpoint, self.tag_str, self.json, self.page, self.limit, self.post_id, self.post_cid, self.ignore_post_id, self.ignore_post_cid).build_url()
-    
-
-    def _get_file_info(self, post: dict, file_path: str, file_name: str):
-        return {
-                    "path": file_path,
-                    "name": file_name,
-                    "owner": post["owner"],
-                    "tags": post["tags"].split(" "),
-                    "width": post["width"],
-                    "height": post["height"],
-                    "size": os.stat(file_path).st_size,
-                    "url": post["file_url"],
-                    "md5": get_hash(file_path)
-                }
-    
+def main():
+    log("Started.", 0)
 
-    def _download_post(self, post, make_dir: bool = True):
-        if "file_url" in post:
+    config = json.load(open("config.json"))
 
-            file_url = post["file_url"]
-        
-            connection = HttpRequest(self.retry, self.timeout)
-            connection.set_url(file_url)
-            response = connection.get()
+    if not os.path.exists("hashes.json"):
+        open("hashes.json", "w+").write(json.dumps([]))
 
-            file_path = ""
-            while True:
-                self.download_num += 1
-                file_name = str(self.download_num).zfill(20)
-                file_path = os.path.join(self.download_path, f"{file_name}."+post["image"].split(".")[-1]) #f"{self.download_path}/{file_name}"
+    path = config["path"]
+    dirs = config["dirs"]
+    threads = config["threads"]
+    sleep_time = config["sleep_time"]
 
-                if not os.path.exists(file_path):
-                    break
+    boorus = [pyb.GELBOORU, pyb.RULE34]
 
-            if make_dir:
-                os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    pybl = pyb.Downloader(path)
 
-            with open(file_path, "wb") as f:
-                f.write(response.content)
+    pybl.set_threads(threads)
 
-            return self._get_file_info(post, file_path, file_name)
-        else:
-            return False
+    pybl.enable_verbose(config["enable_verbose"])
 
-    def fetch(self, threaded: bool = False) -> list:
-        """
-        Fetches the posts from the Rule34/Gelbooru API and returns a list of dictionaries containing the post data. Do not use if you want to download the posts automatically.
-
-        Returns:
-            list: A list with the content fetched and relevant content for downloading.
-        """
-        url = self._generate_url()
-
-        connection = HttpRequest(self.retry, self.timeout)
-        connection.set_url(url)
-        response = connection.get()
-
-        content = []
-        relevant_content = []
-
-        if response.text.strip() not in ("", "[]", "{}"):
-            content = json.loads(response.text)
-        else:
-            return False
-
-        relevant_content = content
-
-        if self.selection in (GELBOORU):
-            try:
-                relevant_content = content["post"]
-            except KeyError:
-                return False
-
-        if not threaded:
-            self.content = content
-            self.relevant_content = relevant_content
-
-        return [content, relevant_content]
-    
-
-    def download(self, make_dir: bool = True) -> list:
-        """
-        Downloads posts from the Rule34/Gelbooru API using a single thread. The page downloaded is set using the set_page() method.
-
-        It will return a list with the following elements:
-        - A list with dictionaries about each downloaded file containing:
-        
-        path (str): The path to the downloaded file.
-        
-        name (str): The name of the downloaded file.
-        
-        owner (str): The owner of the downloaded file.
-        
-        tags (list): A list with the tags of the downloaded file.
-
-
-        width (int): The width of the downloaded file.
-
-        height (int): The height of the downloaded file.
-
-        size (int): The size of the downloaded file in bytes.
-
-        - A list with the content fetched
-        - A list with the relevant content fetched from the api
-
-        Args:
-            make_dir (bool, optional): Whether to create the directory if it does not exist. Defaults to True.
-
-        Returns:
-            list: A list with the files, content fetched and relevant content for downloading.
-        """
-        self.fetch()
-
-        if not self.content:
-            return False
-
-        downloads = []
-
-        number_posts = len(self.relevant_content)
-        count = 0
-        percent = 0
-
-        for post in self.relevant_content:
-
-            if self.verbose:
-                connt += 1
-                percent = (count / number_posts) * 100
-                print(f"Downloading post {count}/{number_posts} on page {self.page} with tags: {self.tag_str} ({percent:.2f}%)")
-
-            try:
-                download = self._download_post(post, make_dir)
-                if download:
-                    downloads.append(download)
-            except Exception as e:
+    # Start downloading
+    for booru in boorus:
+        pybl.set_booru(booru)
+        for d in dirs:
+            has_duplicates = False
+            if booru not in d["boorus"]:
                 continue
-            
-        return [downloads, self.content, self.relevant_content]
-    
 
-    def threaded_download(self, make_dir: bool = True, threads: int = 0) -> list:
-        """
-        Downloads the posts fetched from the Rule34/Gelbooru API using multiple threads.
+            pages = d["pages"]
+            limit = d["limit"]
 
-        Args:
-            make_dir (bool, optional): Whether to create the directory if it does not exist. Defaults to True.
-            threads (int, optional): The number of threads to use. Defaults to 5.
+            pybl.set_limit(limit)
 
-        Returns:
-            list: Same as download()
-        """
+            d_name = d['name']
+            base_dl_path = os.path.join(path, d_name)
+            dl_path = ""
+            old_path = ""
+            pybl.set_tags(d["include_tags"], d["exclude_tags"])
 
-        if threads == 0:
-            threads = self.threads
+            page = pages+1
+            while page >= 0:
+                page -= 1
+                log(f"Downloading page {page+1}. (Tags: {pybl.tag_str}, Booru: {booru}, Dir: {d_name})", 0)
+                hashes = json.load(open("hashes.json"))
 
-        response = self.fetch(threaded=True)
+                old_path = dl_path
+                dl_path = os.path.join(base_dl_path, get_group(base_dl_path, config["files_per_group"]))
 
-        if not response:
-            return False
+                if old_path != dl_path:
+                    pybl.reset_counter()
 
-        content = response[0]
-        relevant_content = response[1]
-
-        if not content:
-            return False
-
-        downloads = []
-
-        total = len(relevant_content) 
-        count = 0
-        percent = 0
-
-        with ThreadPoolExecutor(max_workers=threads) as executor:
-            for post in relevant_content:
-                if self.verbose:
-                    count += 1
-                    percent = (count / total) * 100
-
-                    print(f"Downloading post {count}/{total} on page {self.page} with tags: {self.tag_str} ({percent:.2f}%)")
-
+                pybl.change_download_path(dl_path)
                 try:
-                    download = executor.submit(self._download_post, post, make_dir)
-                    if download:
-                        downloads.append(download.result())
+                    pybl.set_page(page)
+                    files_downloaded = pybl.threaded_download(oldest_first=True)
+
+                    if not files_downloaded:
+                        log(f"No files found on page {page+1}. (Tags: {pybl.tag_str}, Booru: {booru}, Dir: {d_name})", 1)
+                        continue
+
+                    files = files_downloaded[0]
+
+                    num_files = len(files)
+
+                    # Add md5 sum for duplicate checking later.
+                    for file in files:
+                        log(f"Getting hash for {file['path']}...", 0)
+                        with open(file["path"], "rb") as f:
+                            #md5 = hashlib.md5(f.read()).hexdigest()
+                            hashes.append({
+                                "path": file["path"],
+                                "md5": file["md5"]
+                            })
+
+                    json.dump(hashes, open("hashes.json", "w"), indent=4)
+
+                    has_duplicates = check_duplicates(hashes)
+
+                    # Break in case of duplicates for optimization
+                    if has_duplicates:
+                        break
+
+                except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
+                    log(f"Error downloading page {page + 1}: {traceback.format_exc()}", 2)
+                    continue
+                except json.decoder.JSONDecodeError as e:
+                    log(f"No more pages!", 2)
+                    break
+                except OSError as e:
+                    log(f"Critical error happened while downloading: {traceback.format_exc()}", 3)
+                    log(f"Path: {dl_path}\nPage: {page + 1}\nBooru: {booru}\nTags: {d['include_tags']}", 3)
+                    exit(1)
                 except Exception as e:
+                    log(f"Unexpected error downloading page {page + 1}: {traceback.format_exc()}", 2)
                     continue
 
-        return [downloads, content, relevant_content]
+                log(f"Downloaded {num_files} files.", 0)
+                log(f"Taking a break...", 0)
+                time.sleep(sleep_time)
+                log(f"Ready!", 0)
+            pybl.clear_tags()
+            pybl.reset_counter()
+
     
-
-    def loop_download(self, start_page: int, end_page: int, make_dir: bool = True, threaded: bool = True, threads: int = 0) -> list:
-        """
-        Download automatically a range of pages. By default, downloads on thread. Set threaded to false to disable threading.
-        
-        Note: The self.page attribute will be set to the last page downloaded.
-
-        Args:
-            start_page (int): The start page to download. (Paging starts at 0)
-            end_page (int): The end page to download. (This will be the last page downloaded)
-            make_dir (bool, optional): Whether to create the directory if it does not exist. Defaults to True.
-            threaded (bool, optional): Whether to use threading. Defaults to True.
-            threads (int, optional): The number of threads to use. Defaults to 5.
-
-        Returns:
-            list: List of resulting outputs of threaded_download()
-        """
-
-        self.set_page(start_page)
-        
-        if threads > 0:
-            self.set_threads(threads)
-        else:
-            threads = self.threads
-
-        outputs = []
-
-        for self.page in range(start_page, end_page+1):
-            output = self.threaded_download(make_dir, threads) if threaded else self.download(make_dir)
-            if output:
-                outputs.append(output)
-
-        return outputs
-
-
+    log("Finished.", 0)
 
 if __name__ == "__main__":
-    print("This is a module and should not be run directly.")
-    
+    if "check" in args:
+        check_duplicates(json.load(open("hashes.json")))
+    main()
