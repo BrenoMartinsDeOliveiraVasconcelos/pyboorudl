@@ -391,9 +391,9 @@ response
         return [content, relevant_content]
     
 
-    def download(self, make_dir: bool = True) -> list:
+    def threaded_download(self, make_dir: bool = True, threads: int = 0, oldest_first: bool = False) -> list:
         """
-        Downloads posts from the Rule34/Gelbooru API using a single thread. The page downloaded is set using the set_page() method.
+        Downloads posts from the Rule34/Gelbooru API using multiple threads. The page downloaded is set using the set_page() method.
 
         It will return a list with the following elements:
         - A list with dictionaries about each downloaded file containing:
@@ -422,45 +422,6 @@ response
         Returns:
             list: A list with the files, content fetched and relevant content for downloading.
         """
-        self.fetch()
-
-        if not self.content:
-            return False
-
-        downloads = []
-
-        number_posts = len(self.relevant_content)
-        count = 0
-        percent = 0
-
-        for post in self.relevant_content:
-
-            if self.verbose:
-                connt += 1
-                percent = (count / number_posts) * 100
-                print(f"Downloading post {count}/{number_posts} on page {self.page} with tags: {self.tag_str} ({percent:.2f}%)")
-
-            try:
-                download = self._download_post(post, make_dir)
-                if download:
-                    downloads.append(download)
-            except Exception as e:
-                continue
-            
-        return [downloads, self.content, self.relevant_content]
-    
-
-    def threaded_download(self, make_dir: bool = True, threads: int = 0) -> list:
-        """
-        Downloads the posts fetched from the Rule34/Gelbooru API using multiple threads.
-
-        Args:
-            make_dir (bool, optional): Whether to create the directory if it does not exist. Defaults to True.
-            threads (int, optional): The number of threads to use. Defaults to 5.
-
-        Returns:
-            list: Same as download()
-        """
 
         if threads == 0:
             threads = self.threads
@@ -472,6 +433,9 @@ response
 
         content = response[0]
         relevant_content = response[1]
+
+        if oldest_first:
+            relevant_content.reverse()
 
         if not content:
             return False
@@ -532,6 +496,14 @@ response
                 outputs.append(output)
 
         return outputs
+    
+
+    def reset_counter(self):
+        """
+        Resets the download counter.
+        """
+        self.download_num = 0
+
 
 
 
