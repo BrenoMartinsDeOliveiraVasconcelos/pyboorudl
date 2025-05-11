@@ -4,11 +4,18 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 import time
 import random
+import hashlib
 
 # CONSTANTS
 
 RULE34 = "rule34"
 GELBOORU = "gelbooru"
+SAFEBOORU = "safebooru"
+
+
+def get_hash(path) -> str:
+    return hashlib.md5(open(path, "rb").read()).hexdigest()
+
 
 class UrlBuilder:
     def __init__(self, endpoint: str, tag_str: str, json: str, page: int, limit: int, post_id: int, cid: int, ignore_post_id: bool, ignore_post_cid: bool):
@@ -109,7 +116,8 @@ class Downloader:
     def __init__(self, download_path: str, selection: str = RULE34, retry: int = 3, timeout: int = 60):
         self.supported_endpoints = {
             "rule34": "https://api.rule34.xxx/index.php?page=dapi&s=post&q=index",
-            "gelbooru": "https://gelbooru.com//index.php?page=dapi&s=post&q=index"
+            "gelbooru": "https://gelbooru.com/index.php?page=dapi&s=post&q=index",
+            "safebooru": "https://safebooru.org/index.php?page=dapi&s=post&q=index",
         }
         
         self.selection = selection
@@ -124,6 +132,7 @@ class Downloader:
         self.ignore_post_id = True
         self.limit = 100
         self.threads = 5
+        self.download_num = 0
 
 
         self.verbose = False
@@ -313,7 +322,8 @@ response
                     "width": post["width"],
                     "height": post["height"],
                     "size": os.stat(file_path).st_size,
-                    "url": post["file_url"]
+                    "url": post["file_url"],
+                    "md5": get_hash(file_path)
                 }
     
 
@@ -328,7 +338,8 @@ response
 
             file_path = ""
             while True:
-                file_name = random.randint(0, int("9"*250))
+                self.download_num += 1
+                file_name = str(self.download_num).zfill(20)
                 file_path = os.path.join(self.download_path, f"{file_name}."+post["image"].split(".")[-1]) #f"{self.download_path}/{file_name}"
 
                 if not os.path.exists(file_path):
@@ -367,7 +378,7 @@ response
 
         relevant_content = content
 
-        if self.selection == GELBOORU:
+        if self.selection in (GELBOORU):
             try:
                 relevant_content = content["post"]
             except KeyError:
