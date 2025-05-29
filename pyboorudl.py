@@ -355,7 +355,8 @@ response
         else:
             return False
 
-    def fetch(self, threaded: bool = False) -> list:
+
+    def fetch(self, threaded: bool = False) -> list | bool:
         """
         Fetches the posts from the Rule34/Gelbooru API and returns a list of dictionaries containing the post data. Do not use if you want to download the posts automatically.
 
@@ -391,7 +392,7 @@ response
         return [content, relevant_content]
     
 
-    def threaded_download(self, make_dir: bool = True, threads: int = 0, oldest_first: bool = False) -> list:
+    def threaded_download(self, make_dir: bool = True, threads: int = 0, oldest_first: bool = False) -> list | bool:
         """
         Downloads posts from the Rule34/Gelbooru API using multiple threads. The page downloaded is set using the set_page() method.
 
@@ -431,8 +432,8 @@ response
         if not response:
             return False
 
-        content = response[0]
-        relevant_content = response[1]
+        content = response[0] # type: ignore
+        relevant_content = response[1] # type: ignore
 
         if oldest_first:
             relevant_content.reverse()
@@ -488,10 +489,13 @@ response
         else:
             threads = self.threads
 
+        if not threaded:
+            threads = 1
+
         outputs = []
 
         for self.page in range(start_page, end_page+1):
-            output = self.threaded_download(make_dir, threads) if threaded else self.download(make_dir)
+            output = self.threaded_download(make_dir, threads)
             if output:
                 outputs.append(output)
 
