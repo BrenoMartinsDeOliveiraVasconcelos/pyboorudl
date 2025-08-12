@@ -13,6 +13,11 @@ GELBOORU = "gelbooru"
 SAFEBOORU = "safebooru"
 
 
+def network_verbose(text: str, output: bool=False):
+    if output:
+        print(text)
+
+
 def get_hash(path) -> str:
     return hashlib.md5(open(path, "rb").read()).hexdigest()
 
@@ -54,10 +59,11 @@ class UrlBuilder:
     
 
 class HttpRequest:
-    def __init__(self, retry: int = 3, timeout: int = 60):
+    def __init__(self, retry: int = 3, timeout: int = 60, verbose: bool = False):
         self.url = ""
         self.retry = retry
         self.timeout = timeout
+        self.verbose = verbose
 
 
     def set_url(self, url: str):
@@ -99,13 +105,21 @@ class HttpRequest:
 
         while True:
             try:
+                network_verbose(f"GET {self.url}", self.verbose)
                 response = requests.get(self.url)
                 response.raise_for_status()
+
+                network_verbose(f"GET {self.url} -> SUCCESS", self.verbose)
+
                 return response
             except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
                 sleep_time += retry
+                timeout -= retry
 
-                if sleep_time >= timeout:
+                network_verbose(f"GET {self.url} -> FAILED! TRYING UNTILL TIMEOUT ({sleep_time}s/{self.timeout}s)", self.verbose)
+
+                if timeout <= 0:
+                    network_verbose(f"GET {self.url} -> TIMEOUT REACHED", self.verbose)
                     raise e
 
                 time.sleep(sleep_time)
@@ -136,6 +150,7 @@ class Downloader:
 
 
         self.verbose = False
+        self.network_verbose = False
 
         self.retry = retry
         self.timeout = timeout
@@ -307,6 +322,7 @@ response
             state (bool, optional): Whether to enable verbose mode. Defaults to True.
         """
         self.verbose = state
+        self.network_verbose = state
 
 
     def _generate_url(self):
@@ -332,7 +348,7 @@ response
 
             file_url = post["file_url"]
         
-            connection = HttpRequest(self.retry, self.timeout)
+            connection = HttpRequest(self.retry, self.timeout, self.network_verbose)
             connection.set_url(file_url)
             response = connection.get()
 
