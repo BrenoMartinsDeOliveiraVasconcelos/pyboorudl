@@ -281,7 +281,7 @@ class Downloader:
         self.download_path = path
 
 
-    def set_booru(self, booru: str):
+    def set_booru(self, booru: str, api_key: str = "", user_id: str = ""):
         """
         Sets the booru for the Rule34/Gelbooru API query.        height (int): The height of the downloaded file.
 response
@@ -290,6 +290,11 @@ response
         """
         self.endpoint = self.supported_endpoints[booru]
         self.selection = booru
+
+        if self.selection == "gelbooru":
+            if api_key == "" or user_id == "":
+                raise Exception("API key and user ID are required for gelbooru")
+            self.endpoint += f"&api_key={api_key}&user_id={user_id}"
 
 
     def set_wait_time(self, wait_time: int, timeout: int = 60):
