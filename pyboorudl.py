@@ -59,7 +59,7 @@ class UrlBuilder:
     
 
 class HttpRequest:
-    def __init__(self, retry: int = 3, timeout: int = 60, verbose: bool = False):
+    def __init__(self, retry: int = 3, timeout: int = 5, verbose: bool = False):
         self.url = ""
         self.retry = retry
         self.timeout = timeout
@@ -101,33 +101,35 @@ class HttpRequest:
 
         retry = self.retry
         timeout = self.timeout
+        timeout_count = timeout
         sleep_time = 0
 
         while True:
+            network_verbose(f"GET {self.url}", self.verbose)
             try:
-                network_verbose(f"GET {self.url}", self.verbose)
-                response = requests.get(self.url)
+                network_verbose(f"GET {self.url} -> FECTHNG", self.verbose)
+                response = requests.get(self.url, timeout=timeout)
+                network_verbose(f"GET {self.url} -> CONTENT FETCHED", self.verbose)
                 response.raise_for_status()
 
                 network_verbose(f"GET {self.url} -> SUCCESS", self.verbose)
 
                 return response
             except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
-                sleep_time += retry
-                timeout -= retry
+                timeout_count -= retry
 
                 network_verbose(f"GET {self.url} -> FAILED! TRYING UNTILL TIMEOUT ({sleep_time}s/{self.timeout}s)", self.verbose)
 
-                if timeout <= 0:
+                if timeout_count <= 0:
                     network_verbose(f"GET {self.url} -> TIMEOUT REACHED", self.verbose)
                     raise e
 
-                time.sleep(sleep_time)
-                continue
+                network_verbose(f"GET {self.url} -> RETRYING IN {retry}s", self.verbose)
+                time.sleep(retry)
 
 
 class Downloader:
-    def __init__(self, download_path: str, selection: str = RULE34, retry: int = 3, timeout: int = 60):
+    def __init__(self, download_path: str, selection: str = RULE34, retry: int = 3, timeout: int = 5):
         self.supported_endpoints = {
             "rule34": "https://api.rule34.xxx/index.php?page=dapi&s=post&q=index",
             "gelbooru": "https://gelbooru.com/index.php?page=dapi&s=post&q=index",
@@ -297,7 +299,7 @@ response
             self.endpoint += f"&api_key={api_key}&user_id={user_id}"
 
 
-    def set_wait_time(self, wait_time: int, timeout: int = 60):
+    def set_wait_time(self, wait_time: int, timeout: int = 5):
         """
         Sets the wait time for the Rule34/Gelbooru API query.
 
