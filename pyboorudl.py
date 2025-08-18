@@ -11,6 +11,7 @@ import hashlib
 RULE34 = "rule34"
 GELBOORU = "gelbooru"
 SAFEBOORU = "safebooru"
+E621 = "e621"
 
 
 def network_verbose(text: str, output: bool=False):
@@ -59,11 +60,12 @@ class UrlBuilder:
     
 
 class HttpRequest:
-    def __init__(self, retry: int = 3, timeout: int = 5, verbose: bool = False):
+    def __init__(self, headers: dict, retry: int = 3, timeout: int = 5, verbose: bool = False):
         self.url = ""
         self.retry = retry
         self.timeout = timeout
         self.verbose = verbose
+        self.headers = headers
 
 
     def set_url(self, url: str):
@@ -108,7 +110,7 @@ class HttpRequest:
             network_verbose(f"GET {self.url}", self.verbose)
             try:
                 network_verbose(f"GET {self.url} -> FECTHNG", self.verbose)
-                response = requests.get(self.url, timeout=timeout)
+                response = requests.get(self.url, timeout=timeout, headers=self.headers)
                 network_verbose(f"GET {self.url} -> CONTENT FETCHED", self.verbose)
                 response.raise_for_status()
 
@@ -129,13 +131,23 @@ class HttpRequest:
 
 
 class Downloader:
-    def __init__(self, download_path: str, selection: str = RULE34, retry: int = 3, timeout: int = 5):
+    def __init__(self, download_path: str, user_agent: str, selection: str = RULE34, retry: int = 3, timeout: int = 5):
         self.supported_endpoints = {
             "rule34": "https://api.rule34.xxx/index.php?page=dapi&s=post&q=index",
             "gelbooru": "https://gelbooru.com/index.php?page=dapi&s=post&q=index",
             "safebooru": "https://safebooru.org/index.php?page=dapi&s=post&q=index",
+            "e621": "https://e621.net/posts.json"
+        }
+
+        self.username_string = {
+            "gelbooru": "user_id",
+            "e621": "login"
         }
         
+        self.headers = {
+            "User-Agent": user_agent
+        }
+
         self.selection = selection
         self.endpoint = self.supported_endpoints[self.selection]
         self.download_path = download_path
@@ -293,10 +305,12 @@ response
         self.endpoint = self.supported_endpoints[booru]
         self.selection = booru
 
-        if self.selection == "gelbooru":
+        if self.selection in [GELBOORU, E621]:
             if api_key == "" or user_id == "":
-                raise Exception("API key and user ID are required for gelbooru")
-            self.endpoint += f"&api_key={api_key}&user_id={user_id}"
+                raise Exception(f"API key and user ID are required for {self.selection}")
+            
+            user_string = self.username_string[self.selection]
+            self.endpoint += f"&api_key={api_key}&{user_string}={user_id}"
 
 
     def set_wait_time(self, wait_time: int, timeout: int = 5):
@@ -388,7 +402,7 @@ response
         """
         url = self._generate_url()
 
-        connection = HttpRequest(self.retry, self.timeout)
+        connection = HttpRequest(self.headers, self.retry, self.timeout)
         connection.set_url(url)
         response = connection.get()
 
@@ -535,5 +549,5 @@ response
 
 
 if __name__ == "__main__":
-    print("This is a module and should not be run directly.")
+    pass
     
