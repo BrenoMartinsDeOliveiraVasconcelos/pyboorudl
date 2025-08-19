@@ -42,6 +42,10 @@ class UrlBuilder:
 
         This method will construct a URL based on the class's properties and return it as a string. The properties used are the endpoint, json, page, limit, tag_str, id, cid, ignore_post_id, and ignore_post_cid.
 
+        Args:
+            page_str (str): The page string to use in the URL.
+            needs_json (bool): A boolean indicating whether the URL needs to include the json parameter.
+
         Returns:
             str: The constructed URL.
         """
@@ -133,6 +137,19 @@ class HttpRequest:
 
 class Downloader:
     def __init__(self, download_path: str, user_agent: str, selection: str = RULE34, retry: int = 3, timeout: int = 5):
+        """
+        Initializes the Downloader object with the specified parameters.
+
+        Args:
+            download_path (str): The directory to download the files to.
+            user_agent (str): The user agent string to send with the HTTP requests.
+            selection (str, optional): The Booru to download from. Defaults to RULE34.
+            retry (int, optional): The number of times to retry the GET request if a connection error or HTTP error occurs. Defaults to 3.
+            timeout (int, optional): The timeout in seconds for the GET request. Defaults to 5.
+
+        Returns:
+            None
+        """
         self.supported_endpoints = {
             "rule34": "https://api.rule34.xxx/index.php?page=dapi&s=post&q=index",
             "gelbooru": "https://gelbooru.com/index.php?page=dapi&s=post&q=index",
@@ -164,6 +181,7 @@ class Downloader:
         self.download_num = 0
         self.page_str = "pid"
         self.hashes = []
+        self.user_tags = []
 
         if self.selection == E621:
             self.page_str = "page"
@@ -194,6 +212,7 @@ class Downloader:
         """
 
         # Add included tags
+        self.user_tags = included_tags
         for tag in included_tags:
             self.tag_str += f"+{tag}"
 
@@ -311,6 +330,8 @@ class Downloader:
 response
         Args:
             booru (str): The booru to set.
+            api_key (str, optional): The API key for the booru. (API key is NEEDED on gelbooru and e621)
+            user_id (str, optional): The user ID for the booru. (Your user is NEEDED on gelbooru and e621)
         """
         self.endpoint = self.supported_endpoints[booru]
         self.selection = booru
@@ -377,7 +398,7 @@ response
                 }
     
 
-    def _download_post(self, post, make_dir: bool = True):
+    def _download_post(self, post, make_dir: bool = True, tags_on_name: bool = False):
         file_str = "file_url"
 
         if not "file_url" in post and self.selection == E621:
@@ -401,7 +422,11 @@ response
             file_path = ""
             while True:
                 self.download_num += 1
-                file_name = str(self.download_num).zfill(20)
+                file_name = str(self.download_num).zfill(10)
+
+                if tags_on_name:
+                    file_name = "+".join(self.user_tags) + "_" + file_name
+
                 file_path = os.path.join(self.download_path, f"{file_name}."+post["image"].split(".")[-1]) #f"{self.download_path}/{file_name}"
 
                 if not os.path.exists(file_path):
@@ -457,7 +482,7 @@ response
         return [content, relevant_content]
     
 
-    def threaded_download(self, make_dir: bool = True, threads: int = 0, oldest_first: bool = False) -> list | bool:
+    def threaded_download(self, make_dir: bool = True, threads: int = 0, oldest_first: bool = False, tags_on_name: bool = False) -> list | bool:
         """
         Downloads posts from the Rule34/Gelbooru/e621 API using multiple threads. The page downloaded is set using the set_page() method.
 
@@ -484,7 +509,9 @@ response
 
         Args:
             make_dir (bool, optional): Whether to create the directory if it does not exist. Defaults to True.
-
+            threads (int, optional): The number of threads to use. Defaults to 5.
+            oldest_first (bool, optional): Whether to download the oldest posts first. Defaults to False.
+            tags_on_name (bool, optional): Whether to add the tags to the name of the downloaded file. Defaults to False.
         Returns:
             list: A list with the files, content fetched and relevant content for downloading.
         """
@@ -530,7 +557,7 @@ response
                     print(f"Downloading post {count}/{total} on page {self.page} with tags: {self.tag_str} ({percent:.2f}%)")
 
                 try:
-                    download = executor.submit(self._download_post, post, make_dir)
+                    download = executor.submit(self._download_post, post, make_dir, tags_on_name)
                     if download:
                         result = download.result()
 
@@ -543,7 +570,7 @@ response
                             os.remove(result["path"])
                             if self.verbose:
                                 print(f"{result['path']} is a duplicate. The file has been removed.")
-                                
+
                 except Exception as e:
                     continue
         
