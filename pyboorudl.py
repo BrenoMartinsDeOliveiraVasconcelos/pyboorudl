@@ -206,6 +206,8 @@ class Downloader:
         Included tags are prefixed with '+' and excluded tags with '-'.
         The resulting tag string is stored in the `self.tag_str` attribute.
 
+        Important: Remembeer to always use underscoresn instead of spaces. Spaces are replaced automatically, but it is better to do it manually as the code may not do it correctly depending of the tags. Also, check if your tags are working on the desired booru before downloading.
+
         Args:
             included_tags (list): A list of tags to include in the search.
             excluded_tags (list, optional): A list of tags to exclude from the search.
@@ -219,6 +221,9 @@ class Downloader:
         # Add excluded tags
         for tag in excluded_tags:
             self.tag_str += f"+-{tag}"
+
+        # Replace spacing with _
+        self.tag_str = self.tag_str.replace(" ", "_")
 
         # Remove first + if it exists
         self.tag_str = self.tag_str[1:] if self.tag_str.startswith("+") else self.tag_str
