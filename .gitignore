@@ -3,3 +3,4 @@ __pycache__
 .apitoken
 test*.py
 output
+downloads

@@ -163,6 +163,7 @@ class Downloader:
         self.threads = 5
         self.download_num = 0
         self.page_str = "pid"
+        self.hashes = []
 
         if self.selection == E621:
             self.page_str = "page"
@@ -510,6 +511,15 @@ response
         total = len(relevant_content) 
         count = 0
         percent = 0
+        
+        os.makedirs(self.download_path, exist_ok=True)
+        hashes_file = os.path.join(self.download_path, "hashes.txt")
+        if os.path.exists(hashes_file):
+            with open(hashes_file, "r") as f:
+                for line in f:
+                    self.hashes.append(line.strip())
+        else:
+            open(hashes_file, "w+").write("")
 
         with ThreadPoolExecutor(max_workers=threads) as executor:
             for post in relevant_content:
@@ -522,10 +532,24 @@ response
                 try:
                     download = executor.submit(self._download_post, post, make_dir)
                     if download:
-                        downloads.append(download.result())
+                        result = download.result()
+
+                        file_hash = get_hash(result["path"])
+
+                        if file_hash not in self.hashes:
+                            self.hashes.append(file_hash)
+                            downloads.append(result)
+                        else:
+                            os.remove(result["path"])
+                            if self.verbose:
+                                print(f"{result['path']} is a duplicate. The file has been removed.")
+                                
                 except Exception as e:
                     continue
-
+        
+        with open(hashes_file, "w") as f:
+            for hash in self.hashes:
+                f.write(f"{hash}\n")
         return [downloads, content, relevant_content]
     
 
