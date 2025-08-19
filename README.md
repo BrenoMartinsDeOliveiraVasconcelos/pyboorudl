@@ -19,11 +19,11 @@ Note: You need to be logged in on the desired booru.
 
 #### 1.1 Rule34
 
-1 - Access [options](https://rule34.xxx/index.php?page=account&s=options)
-2 - On **API Access Credentials**, check that little checkbox under the text input box
-3 - Scroll to the end and click **Save** 
-4 - Refresh the page
-5 - Back to **API Access Credentials**, copy and paste that text on input box and save it on a secure place
+- Access [options](https://rule34.xxx/index.php?page=account&s=options)
+- On **API Access Credentials**, check that little checkbox under the text input box
+- Scroll to the end and click **Save** 
+- Refresh the page
+- Back to **API Access Credentials**, copy and paste that text on input box and save it on a secure place
 
 How it should look like: 
 
@@ -33,8 +33,8 @@ How it should look like:
 
 #### 1.2 Gelbooru
 
-1 - Access [options](https://gelbooru.com/index.php?page=account&s=options)
-2 - On **API Access Credentials**, copy and paste that text on input box and save it on a secure place.
+- Access [options](https://gelbooru.com/index.php?page=account&s=options)
+- On **API Access Credentials**, copy and paste that text on input box and save it on a secure place.
 
 How it should look like: 
 
@@ -44,10 +44,10 @@ How it should look like:
 
 #### 1.3 e621
 
-1 - Access [edit profile](https://e621.net/users/1550978/edit)
-2 - On **API Key**, click **Generate**
-3 - Type your password
-4 - Copy and paste your **API Key** on a secure place.
+- Access [edit profile](https://e621.net/users/1550978/edit)
+- On **API Key**, click **Generate**
+- Type your password
+- Copy and paste your **API Key** on a secure place.
 
 **Note: Your user ID is your username.**
 
