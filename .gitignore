@@ -1,4 +1,5 @@
 venv
 __pycache__
 .apitoken
-tests.py
+test*.py
+output
