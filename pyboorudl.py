@@ -337,8 +337,8 @@ class Downloader:
 response
         Args:
             booru (str): The booru to set.
-            api_key (str, optional): The API key for the booru. (API key is NEEDED on gelbooru and e621)
-            user_id (str, optional): The user ID for the booru. (Your user is NEEDED on gelbooru and e621)
+            api_key (str, optional): The API key for the booru. (API key is NEEDED on gelbooru, rule34 e621)
+            user_id (str, optional): The user ID for the booru. (Your user is NEEDED on gelbooru, rule34 and e621)
         """
         self.endpoint = self.supported_endpoints[booru]
         self.selection = booru
@@ -488,7 +488,7 @@ response
         return [content, relevant_content]
     
 
-    def threaded_download(self, make_dir: bool = True, threads: int = 0, oldest_first: bool = False, tags_on_name: bool = False) -> list | bool:
+    def threaded_download(self, threads: int = 0, oldest_first: bool = False, tags_on_name: bool = False) -> list | bool:
         """
         Downloads posts from the Rule34/Gelbooru/e621 API using multiple threads. The page downloaded is set using the set_page() method.
 
@@ -563,7 +563,7 @@ response
                     print(f"Downloading post {count}/{total} on page {self.page} with tags: {self.tag_str} ({percent:.2f}%)")
 
                 try:
-                    download = executor.submit(self._download_post, post, make_dir, tags_on_name)
+                    download = executor.submit(self._download_post, post, True, tags_on_name)
                     if download:
                         result = download.result()
 
@@ -584,43 +584,6 @@ response
             for hash in self.hashes:
                 f.write(f"{hash}\n")
         return [downloads, content, relevant_content]
-    
-
-    def loop_download(self, start_page: int, end_page: int, make_dir: bool = True, threaded: bool = True, threads: int = 0) -> list:
-        """
-        Download automatically a range of pages. By default, downloads on thread. Set threaded to false to disable threading.
-        
-        Note: The self.page attribute will be set to the last page downloaded.
-
-        Args:
-            start_page (int): The start page to download. (Paging starts at 0)
-            end_page (int): The end page to download. (This will be the last page downloaded)
-            make_dir (bool, optional): Whether to create the directory if it does not exist. Defaults to True.
-            threaded (bool, optional): Whether to use threading. Defaults to True.
-            threads (int, optional): The number of threads to use. Defaults to 5.
-
-        Returns:
-            list: List of resulting outputs of threaded_download()
-        """
-
-        self.set_page(start_page)
-        
-        if threads > 0:
-            self.set_threads(threads)
-        else:
-            threads = self.threads
-
-        if not threaded:
-            threads = 1
-
-        outputs = []
-
-        for self.page in range(start_page, end_page+1):
-            output = self.threaded_download(make_dir, threads)
-            if output:
-                outputs.append(output)
-
-        return outputs
     
 
     def reset_counter(self):
