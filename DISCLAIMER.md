@@ -1,0 +1,1 @@
+This application serves the singular function of retrieving content from third-party sources. Consequently, the developer shall not be held liable for any content downloaded by the user. All responsibility for such content rests exclusively with the end-user and/or the source website."
