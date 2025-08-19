@@ -218,8 +218,12 @@ class Downloader:
         Args:
             cid (int): The post ID to search for.
         """
-        self.post_cid = cid
-        self.ignore_post_cid = False
+
+        if self.selection not in (E621):
+            self.post_cid = cid
+            self.ignore_post_cid = False
+        else:
+            raise Exception("E621 does not support cid")
 
     
     def unset_cid(self):
@@ -520,7 +524,7 @@ response
                     if download:
                         downloads.append(download.result())
                 except Exception as e:
-                    raise e
+                    continue
 
         return [downloads, content, relevant_content]
     
