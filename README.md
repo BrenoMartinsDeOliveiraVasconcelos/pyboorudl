@@ -10,3 +10,5 @@ That's a module made to download stuff from a booru-like website. Currently, the
 | Safebooru | No | Anime SFW | safebooru.org | ```<module>.SAFEBOORU```
 
 *The constant column indicates the constant used to set the booru where ```Downloader``` class will download stuff.
+
+

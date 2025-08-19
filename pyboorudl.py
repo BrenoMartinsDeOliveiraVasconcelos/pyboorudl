@@ -136,14 +136,15 @@ class HttpRequest:
 
 
 class Downloader:
-    def __init__(self, download_path: str, user_agent: str, selection: str = RULE34, retry: int = 3, timeout: int = 5):
+    def __init__(self, download_path: str, user_agent: str, retry: int = 3, timeout: int = 5):
         """
         Initializes the Downloader object with the specified parameters.
+
+        After intializing, use set_booru to set the booru.
 
         Args:
             download_path (str): The directory to download the files to.
             user_agent (str): The user agent string to send with the HTTP requests.
-            selection (str, optional): The Booru to download from. Defaults to RULE34.
             retry (int, optional): The number of times to retry the GET request if a connection error or HTTP error occurs. Defaults to 3.
             timeout (int, optional): The timeout in seconds for the GET request. Defaults to 5.
 
@@ -167,7 +168,7 @@ class Downloader:
             "User-Agent": user_agent
         }
 
-        self.selection = selection
+        self.selection = RULE34
         self.endpoint = self.supported_endpoints[self.selection]
         self.download_path = download_path
         self.tag_str = ""
