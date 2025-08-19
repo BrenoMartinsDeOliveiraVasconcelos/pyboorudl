@@ -159,6 +159,7 @@ class Downloader:
 
         self.username_string = {
             "gelbooru": "user_id",
+            "rule34": "user_id",
             "e621": "login"
         }
         
@@ -344,7 +345,7 @@ response
         if self.selection == E621:
             self.page_str = "page"
 
-        if self.selection in [GELBOORU, E621]:
+        if self.selection in [GELBOORU, E621, RULE34]:
             if api_key == "" or user_id == "":
                 raise Exception(f"API key and user ID are required for {self.selection}")
             
@@ -417,7 +418,6 @@ response
             post["file_url"] = post["url"]
 
         if file_str in post:
-
             file_url = post[file_str]
         
             connection = HttpRequest(self.headers, self.retry, self.timeout, self.network_verbose)
