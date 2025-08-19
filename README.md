@@ -135,6 +135,7 @@ This is the way you would like to do most of the time. This way, you will need t
 | threads (*) | The number of threads to use | Integer with the number of threads
 | oldest_first | If the page will be downloaded from the oldest item or the newest item | Boolean. Defaults to False
 | tags_on_name | If the tags will be included on the filename | Boolean. Defaults to False
+| check_duplicates | If duplicates will be checked automatically | Boolean. Defaults to True
 
 *You can also define the thread number with ```Downloader().set_threads```.
 

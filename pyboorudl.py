@@ -488,7 +488,7 @@ response
         return [content, relevant_content]
     
 
-    def threaded_download(self, threads: int = 0, oldest_first: bool = False, tags_on_name: bool = False) -> list | bool:
+    def threaded_download(self, threads: int = 0, oldest_first: bool = False, tags_on_name: bool = False, check_duplicates: bool = True) -> list | bool:
         """
         Downloads posts from the Rule34/Gelbooru/e621 API using multiple threads. The page downloaded is set using the set_page() method.
 
@@ -569,7 +569,7 @@ response
 
                         file_hash = get_hash(result["path"])
 
-                        if file_hash not in self.hashes:
+                        if file_hash not in self.hashes or not check_duplicates:
                             self.hashes.append(file_hash)
                             downloads.append(result)
                         else:
