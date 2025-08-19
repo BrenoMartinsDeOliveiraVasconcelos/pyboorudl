@@ -373,11 +373,23 @@ response
     
 
     def _download_post(self, post, make_dir: bool = True):
-        if "file_url" in post:
+        file_str = "file_url"
 
-            file_url = post["file_url"]
+        if not "file_url" in post and self.selection == E621:
+            file_str = "url"
+            full_dict = post
+
+            post = post["file"]
+            post["image"] = post["url"].split(os.path.sep)[-1]
+            post["owner"] = full_dict["uploader_id"]
+            post["tags"] = " ".join(full_dict["tags"]["general"])
+            post["file_url"] = post["url"]
+
+        if file_str in post:
+
+            file_url = post[file_str]
         
-            connection = HttpRequest(self.retry, self.timeout, self.network_verbose)
+            connection = HttpRequest(self.headers, self.retry, self.timeout, self.network_verbose)
             connection.set_url(file_url)
             response = connection.get()
 
@@ -429,6 +441,9 @@ response
                 relevant_content = content["post"]
             except KeyError:
                 return False
+            
+        if self.selection in (E621):
+            relevant_content = content["posts"]
 
         if not threaded:
             self.content = content
@@ -505,7 +520,7 @@ response
                     if download:
                         downloads.append(download.result())
                 except Exception as e:
-                    continue
+                    raise e
 
         return [downloads, content, relevant_content]
     
