@@ -36,7 +36,7 @@ class UrlBuilder:
         self.ignore_post_id = ignore_post_id
         self.ignore_post_cid = ignore_post_cid
 
-    def build_url(self) -> str:
+    def build_url(self, page_str: str, needs_json: bool) -> str:
         """
         Builds a URL for the Rule34/Gelbooru API query using the class's properties.
 
@@ -45,7 +45,8 @@ class UrlBuilder:
         Returns:
             str: The constructed URL.
         """
-        url = f"{self.endpoint}&json={self.json}&pid={self.page}&limit={self.limit}"
+        json_str = f"&json={self.json}" if needs_json else ""
+        url = f"{self.endpoint}{json_str}&{page_str}={self.page}&limit={self.limit}"
 
         if self.tag_str != "":
             url += f"&tags={self.tag_str}"
@@ -136,7 +137,7 @@ class Downloader:
             "rule34": "https://api.rule34.xxx/index.php?page=dapi&s=post&q=index",
             "gelbooru": "https://gelbooru.com/index.php?page=dapi&s=post&q=index",
             "safebooru": "https://safebooru.org/index.php?page=dapi&s=post&q=index",
-            "e621": "https://e621.net/posts.json"
+            "e621": "https://e621.net/posts.json?"
         }
 
         self.username_string = {
@@ -161,6 +162,10 @@ class Downloader:
         self.limit = 100
         self.threads = 5
         self.download_num = 0
+        self.page_str = "pid"
+
+        if self.selection == E621:
+            self.page_str = "page"
 
 
         self.verbose = False
@@ -305,6 +310,9 @@ response
         self.endpoint = self.supported_endpoints[booru]
         self.selection = booru
 
+        if self.selection == E621:
+            self.page_str = "page"
+
         if self.selection in [GELBOORU, E621]:
             if api_key == "" or user_id == "":
                 raise Exception(f"API key and user ID are required for {self.selection}")
@@ -347,7 +355,7 @@ response
 
 
     def _generate_url(self):
-        return UrlBuilder(self.endpoint, self.tag_str, self.json, self.page, self.limit, self.post_id, self.post_cid, self.ignore_post_id, self.ignore_post_cid).build_url()
+        return UrlBuilder(self.endpoint, self.tag_str, self.json, self.page, self.limit, self.post_id, self.post_cid, self.ignore_post_id, self.ignore_post_cid).build_url(self.page_str, False if self.selection == E621 else True)
     
 
     def _get_file_info(self, post: dict, file_path: str, file_name: str):
