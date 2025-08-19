@@ -38,7 +38,7 @@ class UrlBuilder:
 
     def build_url(self, page_str: str, needs_json: bool) -> str:
         """
-        Builds a URL for the Rule34/Gelbooru API query using the class's properties.
+        Builds a URL for the Rule34/Gelbooru/e621 API query using the class's properties.
 
         This method will construct a URL based on the class's properties and return it as a string. The properties used are the endpoint, json, page, limit, tag_str, id, cid, ignore_post_id, and ignore_post_cid.
 
@@ -181,7 +181,7 @@ class Downloader:
 
     def set_tags(self, included_tags: list, excluded_tags: list = []):
         """
-        Sets the tags for the Rule34/Gelbooru API query. Adds to the existing tag string if already set. Use clear_tags() to reset the tag string.
+        Sets the tags for the Rule34/Gelbooru/e621 API query. Adds to the existing tag string if already set. Use clear_tags() to reset the tag string.
 
         This method constructs a tag string by adding included and excluded tags.
         Included tags are prefixed with '+' and excluded tags with '-'.
@@ -206,14 +206,14 @@ class Downloader:
     
     def clear_tags(self):
         """
-        Clears the tag string for the Rule34/Gelbooru API query.
+        Clears the tag string for the Rule34/Gelbooru/e621 API query.
         """
         self.tag_str = ""
 
 
     def set_cid(self, cid: int):
         """
-        Sets the post change ID for the Rule34/Gelbooru API query. Value is Unix time, so it will probably have posts with same ID.
+        Sets the post change ID for the Rule34/Gelbooru/e621 API query. Value is Unix time, so it will probably have posts with same ID.
 
         Args:
             cid (int): The post ID to search for.
@@ -228,7 +228,7 @@ class Downloader:
     
     def unset_cid(self):
         """
-        Resets the post ID and ignores it in the Rule34/Gelbooru API query.
+        Resets the post ID and ignores it in the Rule34/Gelbooru/e621 API query.
         """
         self.post_cid = 0
         self.ignore_post_cid = True
@@ -236,7 +236,7 @@ class Downloader:
 
     def set_id(self, id: int):
         """
-        Sets the post ID for the Rule34/Gelbooru API query.
+        Sets the post ID for the Rule34/Gelbooru/e621 API query.
 
         Args:
             id (int): The post ID to search for.
@@ -247,7 +247,7 @@ class Downloader:
     
     def unset_id(self):
         """
-        Resets the post ID and ignores it in the Rule34/Gelbooru API query.
+        Resets the post ID and ignores it in the Rule34/Gelbooru/e621 API query.
         """
         self.post_id = 0
         self.ignore_post_id = True
@@ -255,7 +255,7 @@ class Downloader:
     
     def page_next(self):
         """
-        Increments the page number for the Rule34/Gelbooru API query.
+        Increments the page number for the Rule34/Gelbooru/e621 API query.
 
         This method increments the page number by one and does not accept any arguments.
         """
@@ -264,7 +264,7 @@ class Downloader:
     
     def page_prev(self):
         """
-        Decrements the page number for the Rule34/Gelbooru API query.
+        Decrements the page number for the Rule34/Gelbooru/e621 API query.
 
         This method decrements the page number by one and does not accept any arguments.
         """
@@ -276,7 +276,7 @@ class Downloader:
 
     def set_page(self, page: int):
         """
-        Sets the page number for the Rule34/Gelbooru API query.
+        Sets the page number for the Rule34/Gelbooru/e621 API query.
 
         Args:
             page (int): The page number to set.
@@ -286,7 +286,7 @@ class Downloader:
 
     def set_limit(self, limit: int):
         """
-        Sets the limit of posts fetched for the Rule34/Gelbooru API query.
+        Sets the limit of posts fetched for the Rule34/Gelbooru/e621 API query.
 
         Args:
             limit (int): The limit to set.
@@ -296,7 +296,7 @@ class Downloader:
 
     def change_download_path(self, path: str):
         """
-        Changes the download path for the Rule34/Gelbooru API query.
+        Changes the download path for the Rule34/Gelbooru/e621 API query.
 
         Args:
             path (str): The new download path.
@@ -306,7 +306,7 @@ class Downloader:
 
     def set_booru(self, booru: str, api_key: str = "", user_id: str = ""):
         """
-        Sets the booru for the Rule34/Gelbooru API query.        height (int): The height of the downloaded file.
+        Sets the booru for the Rule34/Gelbooru/e621 API query.        height (int): The height of the downloaded file.
 response
         Args:
             booru (str): The booru to set.
@@ -327,7 +327,7 @@ response
 
     def set_wait_time(self, wait_time: int, timeout: int = 5):
         """
-        Sets the wait time for the Rule34/Gelbooru API query.
+        Sets the wait time for the Rule34/Gelbooru/e621 API query.
 
         Args:
             wait_time (int): The wait time in seconds.
@@ -349,7 +349,7 @@ response
 
     def enable_verbose(self, state: bool = True):
         """
-        Enables or disables verbose mode for the Rule34/Gelbooru API query.
+        Enables or disables verbose mode for the Rule34/Gelbooru/e621 API query.
 
         Args:
             state (bool, optional): Whether to enable verbose mode. Defaults to True.
@@ -419,7 +419,7 @@ response
 
     def fetch(self, threaded: bool = False) -> list | bool:
         """
-        Fetches the posts from the Rule34/Gelbooru API and returns a list of dictionaries containing the post data. Do not use if you want to download the posts automatically.
+        Fetches the posts from the Rule34/Gelbooru/e621 API and returns a list of dictionaries containing the post data. Do not use if you want to download the posts automatically.
 
         Returns:
             list: A list with the content fetched and relevant content for downloading.
@@ -458,7 +458,7 @@ response
 
     def threaded_download(self, make_dir: bool = True, threads: int = 0, oldest_first: bool = False) -> list | bool:
         """
-        Downloads posts from the Rule34/Gelbooru API using multiple threads. The page downloaded is set using the set_page() method.
+        Downloads posts from the Rule34/Gelbooru/e621 API using multiple threads. The page downloaded is set using the set_page() method.
 
         It will return a list with the following elements:
         - A list with dictionaries about each downloaded file containing:
