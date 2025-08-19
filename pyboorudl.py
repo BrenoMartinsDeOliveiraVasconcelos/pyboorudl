@@ -11,6 +11,7 @@ import hashlib
 RULE34 = "rule34"
 GELBOORU = "gelbooru"
 SAFEBOORU = "safebooru"
+E621 = "e621"
 
 
 def network_verbose(text: str, output: bool=False):
@@ -35,16 +36,17 @@ class UrlBuilder:
         self.ignore_post_id = ignore_post_id
         self.ignore_post_cid = ignore_post_cid
 
-    def build_url(self) -> str:
+    def build_url(self, page_str: str, needs_json: bool) -> str:
         """
-        Builds a URL for the Rule34/Gelbooru API query using the class's properties.
+        Builds a URL for the Rule34/Gelbooru/e621 API query using the class's properties.
 
         This method will construct a URL based on the class's properties and return it as a string. The properties used are the endpoint, json, page, limit, tag_str, id, cid, ignore_post_id, and ignore_post_cid.
 
         Returns:
             str: The constructed URL.
         """
-        url = f"{self.endpoint}&json={self.json}&pid={self.page}&limit={self.limit}"
+        json_str = f"&json={self.json}" if needs_json else ""
+        url = f"{self.endpoint}{json_str}&{page_str}={self.page}&limit={self.limit}"
 
         if self.tag_str != "":
             url += f"&tags={self.tag_str}"
@@ -59,11 +61,12 @@ class UrlBuilder:
     
 
 class HttpRequest:
-    def __init__(self, retry: int = 3, timeout: int = 5, verbose: bool = False):
+    def __init__(self, headers: dict, retry: int = 3, timeout: int = 5, verbose: bool = False):
         self.url = ""
         self.retry = retry
         self.timeout = timeout
         self.verbose = verbose
+        self.headers = headers
 
 
     def set_url(self, url: str):
@@ -108,7 +111,7 @@ class HttpRequest:
             network_verbose(f"GET {self.url}", self.verbose)
             try:
                 network_verbose(f"GET {self.url} -> FECTHNG", self.verbose)
-                response = requests.get(self.url, timeout=timeout)
+                response = requests.get(self.url, timeout=timeout, headers=self.headers)
                 network_verbose(f"GET {self.url} -> CONTENT FETCHED", self.verbose)
                 response.raise_for_status()
 
@@ -129,13 +132,23 @@ class HttpRequest:
 
 
 class Downloader:
-    def __init__(self, download_path: str, selection: str = RULE34, retry: int = 3, timeout: int = 5):
+    def __init__(self, download_path: str, user_agent: str, selection: str = RULE34, retry: int = 3, timeout: int = 5):
         self.supported_endpoints = {
             "rule34": "https://api.rule34.xxx/index.php?page=dapi&s=post&q=index",
             "gelbooru": "https://gelbooru.com/index.php?page=dapi&s=post&q=index",
             "safebooru": "https://safebooru.org/index.php?page=dapi&s=post&q=index",
+            "e621": "https://e621.net/posts.json?"
+        }
+
+        self.username_string = {
+            "gelbooru": "user_id",
+            "e621": "login"
         }
         
+        self.headers = {
+            "User-Agent": user_agent
+        }
+
         self.selection = selection
         self.endpoint = self.supported_endpoints[self.selection]
         self.download_path = download_path
@@ -149,6 +162,10 @@ class Downloader:
         self.limit = 100
         self.threads = 5
         self.download_num = 0
+        self.page_str = "pid"
+
+        if self.selection == E621:
+            self.page_str = "page"
 
 
         self.verbose = False
@@ -164,7 +181,7 @@ class Downloader:
 
     def set_tags(self, included_tags: list, excluded_tags: list = []):
         """
-        Sets the tags for the Rule34/Gelbooru API query. Adds to the existing tag string if already set. Use clear_tags() to reset the tag string.
+        Sets the tags for the Rule34/Gelbooru/e621 API query. Adds to the existing tag string if already set. Use clear_tags() to reset the tag string.
 
         This method constructs a tag string by adding included and excluded tags.
         Included tags are prefixed with '+' and excluded tags with '-'.
@@ -189,25 +206,29 @@ class Downloader:
     
     def clear_tags(self):
         """
-        Clears the tag string for the Rule34/Gelbooru API query.
+        Clears the tag string for the Rule34/Gelbooru/e621 API query.
         """
         self.tag_str = ""
 
 
     def set_cid(self, cid: int):
         """
-        Sets the post change ID for the Rule34/Gelbooru API query. Value is Unix time, so it will probably have posts with same ID.
+        Sets the post change ID for the Rule34/Gelbooru/e621 API query. Value is Unix time, so it will probably have posts with same ID.
 
         Args:
             cid (int): The post ID to search for.
         """
-        self.post_cid = cid
-        self.ignore_post_cid = False
+
+        if self.selection not in (E621):
+            self.post_cid = cid
+            self.ignore_post_cid = False
+        else:
+            raise Exception("E621 does not support cid")
 
     
     def unset_cid(self):
         """
-        Resets the post ID and ignores it in the Rule34/Gelbooru API query.
+        Resets the post ID and ignores it in the Rule34/Gelbooru/e621 API query.
         """
         self.post_cid = 0
         self.ignore_post_cid = True
@@ -215,7 +236,7 @@ class Downloader:
 
     def set_id(self, id: int):
         """
-        Sets the post ID for the Rule34/Gelbooru API query.
+        Sets the post ID for the Rule34/Gelbooru/e621 API query.
 
         Args:
             id (int): The post ID to search for.
@@ -226,7 +247,7 @@ class Downloader:
     
     def unset_id(self):
         """
-        Resets the post ID and ignores it in the Rule34/Gelbooru API query.
+        Resets the post ID and ignores it in the Rule34/Gelbooru/e621 API query.
         """
         self.post_id = 0
         self.ignore_post_id = True
@@ -234,7 +255,7 @@ class Downloader:
     
     def page_next(self):
         """
-        Increments the page number for the Rule34/Gelbooru API query.
+        Increments the page number for the Rule34/Gelbooru/e621 API query.
 
         This method increments the page number by one and does not accept any arguments.
         """
@@ -243,7 +264,7 @@ class Downloader:
     
     def page_prev(self):
         """
-        Decrements the page number for the Rule34/Gelbooru API query.
+        Decrements the page number for the Rule34/Gelbooru/e621 API query.
 
         This method decrements the page number by one and does not accept any arguments.
         """
@@ -255,7 +276,7 @@ class Downloader:
 
     def set_page(self, page: int):
         """
-        Sets the page number for the Rule34/Gelbooru API query.
+        Sets the page number for the Rule34/Gelbooru/e621 API query.
 
         Args:
             page (int): The page number to set.
@@ -265,7 +286,7 @@ class Downloader:
 
     def set_limit(self, limit: int):
         """
-        Sets the limit of posts fetched for the Rule34/Gelbooru API query.
+        Sets the limit of posts fetched for the Rule34/Gelbooru/e621 API query.
 
         Args:
             limit (int): The limit to set.
@@ -275,7 +296,7 @@ class Downloader:
 
     def change_download_path(self, path: str):
         """
-        Changes the download path for the Rule34/Gelbooru API query.
+        Changes the download path for the Rule34/Gelbooru/e621 API query.
 
         Args:
             path (str): The new download path.
@@ -285,7 +306,7 @@ class Downloader:
 
     def set_booru(self, booru: str, api_key: str = "", user_id: str = ""):
         """
-        Sets the booru for the Rule34/Gelbooru API query.        height (int): The height of the downloaded file.
+        Sets the booru for the Rule34/Gelbooru/e621 API query.        height (int): The height of the downloaded file.
 response
         Args:
             booru (str): The booru to set.
@@ -293,15 +314,20 @@ response
         self.endpoint = self.supported_endpoints[booru]
         self.selection = booru
 
-        if self.selection == "gelbooru":
+        if self.selection == E621:
+            self.page_str = "page"
+
+        if self.selection in [GELBOORU, E621]:
             if api_key == "" or user_id == "":
-                raise Exception("API key and user ID are required for gelbooru")
-            self.endpoint += f"&api_key={api_key}&user_id={user_id}"
+                raise Exception(f"API key and user ID are required for {self.selection}")
+            
+            user_string = self.username_string[self.selection]
+            self.endpoint += f"&api_key={api_key}&{user_string}={user_id}"
 
 
     def set_wait_time(self, wait_time: int, timeout: int = 5):
         """
-        Sets the wait time for the Rule34/Gelbooru API query.
+        Sets the wait time for the Rule34/Gelbooru/e621 API query.
 
         Args:
             wait_time (int): The wait time in seconds.
@@ -323,7 +349,7 @@ response
 
     def enable_verbose(self, state: bool = True):
         """
-        Enables or disables verbose mode for the Rule34/Gelbooru API query.
+        Enables or disables verbose mode for the Rule34/Gelbooru/e621 API query.
 
         Args:
             state (bool, optional): Whether to enable verbose mode. Defaults to True.
@@ -333,7 +359,7 @@ response
 
 
     def _generate_url(self):
-        return UrlBuilder(self.endpoint, self.tag_str, self.json, self.page, self.limit, self.post_id, self.post_cid, self.ignore_post_id, self.ignore_post_cid).build_url()
+        return UrlBuilder(self.endpoint, self.tag_str, self.json, self.page, self.limit, self.post_id, self.post_cid, self.ignore_post_id, self.ignore_post_cid).build_url(self.page_str, False if self.selection == E621 else True)
     
 
     def _get_file_info(self, post: dict, file_path: str, file_name: str):
@@ -351,11 +377,23 @@ response
     
 
     def _download_post(self, post, make_dir: bool = True):
-        if "file_url" in post:
+        file_str = "file_url"
 
-            file_url = post["file_url"]
+        if not "file_url" in post and self.selection == E621:
+            file_str = "url"
+            full_dict = post
+
+            post = post["file"]
+            post["image"] = post["url"].split(os.path.sep)[-1]
+            post["owner"] = full_dict["uploader_id"]
+            post["tags"] = " ".join(full_dict["tags"]["general"])
+            post["file_url"] = post["url"]
+
+        if file_str in post:
+
+            file_url = post[file_str]
         
-            connection = HttpRequest(self.retry, self.timeout, self.network_verbose)
+            connection = HttpRequest(self.headers, self.retry, self.timeout, self.network_verbose)
             connection.set_url(file_url)
             response = connection.get()
 
@@ -381,14 +419,14 @@ response
 
     def fetch(self, threaded: bool = False) -> list | bool:
         """
-        Fetches the posts from the Rule34/Gelbooru API and returns a list of dictionaries containing the post data. Do not use if you want to download the posts automatically.
+        Fetches the posts from the Rule34/Gelbooru/e621 API and returns a list of dictionaries containing the post data. Do not use if you want to download the posts automatically.
 
         Returns:
             list: A list with the content fetched and relevant content for downloading.
         """
         url = self._generate_url()
 
-        connection = HttpRequest(self.retry, self.timeout)
+        connection = HttpRequest(self.headers, self.retry, self.timeout)
         connection.set_url(url)
         response = connection.get()
 
@@ -407,6 +445,9 @@ response
                 relevant_content = content["post"]
             except KeyError:
                 return False
+            
+        if self.selection in (E621):
+            relevant_content = content["posts"]
 
         if not threaded:
             self.content = content
@@ -417,7 +458,7 @@ response
 
     def threaded_download(self, make_dir: bool = True, threads: int = 0, oldest_first: bool = False) -> list | bool:
         """
-        Downloads posts from the Rule34/Gelbooru API using multiple threads. The page downloaded is set using the set_page() method.
+        Downloads posts from the Rule34/Gelbooru/e621 API using multiple threads. The page downloaded is set using the set_page() method.
 
         It will return a list with the following elements:
         - A list with dictionaries about each downloaded file containing:
@@ -535,5 +576,5 @@ response
 
 
 if __name__ == "__main__":
-    print("This is a module and should not be run directly.")
+    pass
     
