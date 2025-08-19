@@ -4,7 +4,7 @@ That's a module made to download stuff from a booru-like website. Currently, the
 
 | Booru | Needs token? | Type | URL | Constant* 
 |---|---|---|---|---
-| Rule34 | No | Hentai | rule34.xxx | ```<module>.RULE34```
+| Rule34 | Yes | Hentai | rule34.xxx | ```<module>.RULE34```
 | Gelbooru | Yes | Hentai | gelbooru.com | ```<module>.GELBOORU```
 | e621 | Yes | Furry Hentai | e621.net | ```<module>.E621```
 | Safebooru | No | Anime SFW | safebooru.org | ```<module>.SAFEBOORU```
