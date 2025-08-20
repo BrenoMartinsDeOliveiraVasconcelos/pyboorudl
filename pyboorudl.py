@@ -432,6 +432,7 @@ response
 
                 if tags_on_name:
                     file_name = "+".join(self.user_tags) + "_" + file_name
+                    file_name = file_name.replace("/", "-")
 
                 file_path = os.path.join(self.download_path, f"{file_name}."+post["image"].split(".")[-1]) #f"{self.download_path}/{file_name}"
 
