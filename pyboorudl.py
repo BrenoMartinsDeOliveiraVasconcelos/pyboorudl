@@ -575,6 +575,7 @@ response
                             downloads.append(result)
                         else:
                             os.remove(result["path"])
+                            self.download_num -= 1
                             if self.verbose:
                                 print(f"{result['path']} is a duplicate. The file has been removed.")
 
