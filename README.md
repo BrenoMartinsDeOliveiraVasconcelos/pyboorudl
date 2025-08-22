@@ -11,6 +11,8 @@ That's a module made to download stuff from a booru-like website. Currently, the
 
 *The constant column indicates the constant used to set the booru where ```Downloader``` class will download stuff.
 
+**Note: You can run client.py if you don't know programming or just don't want to make your own client.**
+
 ## 1 Setup
 
 If you are whiling to download from a booru that needs a token, you need to get an API token and your user ID to do so. Here's a brief tutorial on how to get it.
@@ -166,3 +168,16 @@ If you encounter any issue, you can enable verbosity with ```Downloader().enable
 | Parameters | Description | Expected value
 | --- | --- | ---
 state | Enabled or disabled | Boolean. Defaults to True.
+
+
+### 4.3 Test connection
+
+You can test the connection with ```Downloader().test_connection```. It returns a boolean.
+
+### 4.4 Set download path
+
+You can set the download path with ```Downloader().set_download_path```
+
+| Parameters | Description | Expected value
+| --- | --- | ---
+path | The path to the download folder | String

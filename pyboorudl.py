@@ -595,6 +595,21 @@ response
         self.download_num = 0
 
 
+    def test_connection(self):
+        """
+        Tests the connection to the API.
+        """
+        return self.fetch() is not False
+    
+
+    def set_download_path(self, path: str):
+        """
+        Sets the download path for the downloaded files.
+
+        Args:
+            path (str): The path to the download folder.
+        """
+        self.download_path = path
 
 
 if __name__ == "__main__":
