@@ -168,3 +168,16 @@ If you encounter any issue, you can enable verbosity with ```Downloader().enable
 | Parameters | Description | Expected value
 | --- | --- | ---
 state | Enabled or disabled | Boolean. Defaults to True.
+
+
+### 4.3 Test connection
+
+You can test the connection with ```Downloader().test_connection```. It returns a boolean.
+
+### 4.4 Set download path
+
+You can set the download path with ```Downloader().set_download_path```
+
+| Parameters | Description | Expected value
+| --- | --- | ---
+path | The path to the download folder | String
