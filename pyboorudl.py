@@ -12,6 +12,19 @@ RULE34 = "rule34"
 GELBOORU = "gelbooru"
 SAFEBOORU = "safebooru"
 E621 = "e621"
+MAX_LIMIT = {
+    "rule34": 1000,
+    "gelbooru": 100,
+    "e621": 320,
+    "safebooru": 1000
+}
+
+MAX_PAGE = {
+    "rule34": -1,
+    "gelbooru": -1,
+    "e621": 750,
+    "safebooru": -1
+}
 
 
 def network_verbose(text: str, output: bool=False):
@@ -291,7 +304,7 @@ class Downloader:
     
     def page_prev(self):
         """
-        Decrements the page number for the Rule34/Gelbooru/e621 API query.
+        Decrements the page number for the Rule34/Gelbooru/e621 API query. Some boorus may have a hard limit of pages. Exceeding that value will set the page to its limit.
 
         This method decrements the page number by one and does not accept any arguments.
         """
@@ -308,17 +321,25 @@ class Downloader:
         Args:
             page (int): The page number to set.
         """
+
         self.page = page
+
+        if MAX_PAGE[self.selection] != -1 and self.page > MAX_PAGE[self.selection]:
+            self.page = MAX_PAGE[self.selection]
 
 
     def set_limit(self, limit: int):
         """
-        Sets the limit of posts fetched for the Rule34/Gelbooru/e621 API query.
+        Sets the limit of posts fetched for the Rule34/Gelbooru/e621 API query. There's a hard defined limit by booru (booru's fault), numbers bigger than the limit will be ignored and the max number will be set instead.
 
         Args:
             limit (int): The limit to set.
         """
-        self.limit = limit
+
+        if limit <= MAX_LIMIT[self.selection]:
+            self.limit = limit
+        else:
+            self.limit = MAX_LIMIT[self.selection]
 
 
     def change_download_path(self, path: str):
