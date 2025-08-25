@@ -103,7 +103,7 @@ def main():
         print("Download is going to start in a few seconds.")
         time.sleep(5)
 
-        for page in range(int(page_range[0]), int(page_range[1]) + 1):
+        for page in range(int(page_range[0])-1, int(page_range[1])):
             dl.set_page(page)
             dl.threaded_download(threads=5, tags_on_name=True, check_duplicates=True)
             time.sleep(1)

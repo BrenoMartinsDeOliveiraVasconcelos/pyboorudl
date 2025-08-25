@@ -188,7 +188,7 @@ class Downloader:
         self.json = "1"
         self.post_cid = 0
         self.ignore_post_cid = True
-        self.page = 1
+        self.page = 0
         self.post_id = 0
         self.ignore_post_id = True
         self.limit = 100
@@ -319,7 +319,7 @@ class Downloader:
         Sets the page number for the Rule34/Gelbooru/e621 API query.
 
         Args:
-            page (int): The page number to set.
+            page (int): The page number to set. Pages start with 0 instead of 1.
         """
 
         self.page = page
