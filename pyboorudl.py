@@ -3,7 +3,7 @@ import json
 import os
 from concurrent.futures import ThreadPoolExecutor
 import time
-import random
+import sys
 import hashlib
 
 # CONSTANTS
@@ -442,9 +442,9 @@ response
         if file_str in post:
             file_url = post[file_str]
         
-            connection = HttpRequest(self.headers, self.retry, self.timeout, self.network_verbose)
-            connection.set_url(file_url)
-            response = connection.get()
+            #connection = HttpRequest(self.headers, self.retry, self.timeout, self.network_verbose)
+            #connection.set_url(file_url)
+            #response = connection.get()
 
             file_path = ""
             while True:
@@ -463,8 +463,11 @@ response
             if make_dir:
                 os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-            with open(file_path, "wb") as f:
-                f.write(response.content)
+            with requests.get(file_url, stream=True) as r:
+                r.raise_for_status()
+                with open(file_path, "wb") as f:
+                    for chunk in r.iter_content(chunk_size=134217728):
+                        f.write(chunk)
 
             return self._get_file_info(post, file_path, file_name)
         else:
@@ -591,15 +594,20 @@ response
 
                         file_hash = get_hash(result["path"])
 
-                        if file_hash not in self.hashes or not check_duplicates:
-                            self.hashes.append(file_hash)
-                            downloads.append(result)
-                        else:
-                            os.remove(result["path"])
-                            self.download_num -= 1
-                            if self.verbose:
-                                print(f"{result['path']} is a duplicate. The file has been removed.")
+                        append_result = True
 
+                        if check_duplicates:
+                            if file_hash not in self.hashes:
+                                self.hashes.append(file_hash)
+                            else:
+                                append_result = False
+                                os.remove(result["path"])
+                                self.download_num -= 1
+                                if self.verbose:
+                                    print(f"{result['path']} is a duplicate. The file has been removed.")
+
+                        if append_result:
+                            downloads.append(result)
                 except Exception as e:
                     continue
         
@@ -634,5 +642,5 @@ response
 
 
 if __name__ == "__main__":
-    pass
+    print("This file is not meant to be run as a script.")
     
