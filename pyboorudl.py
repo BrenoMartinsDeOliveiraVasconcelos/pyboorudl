@@ -592,11 +592,10 @@ response
                     if download:
                         result = download.result()
 
-                        file_hash = get_hash(result["path"])
-
                         append_result = True
 
                         if check_duplicates:
+                            file_hash = get_hash(result["path"])
                             if file_hash not in self.hashes:
                                 self.hashes.append(file_hash)
                             else:
