@@ -598,6 +598,8 @@ response
                             file_hash = get_hash(result["path"])
                             if file_hash not in self.hashes:
                                 self.hashes.append(file_hash)
+                                with open(hashes_file, "a") as f:
+                                    f.write(f"{file_hash}\n")
                             else:
                                 append_result = False
                                 os.remove(result["path"])
@@ -609,10 +611,6 @@ response
                             downloads.append(result)
                 except Exception as e:
                     continue
-        
-        with open(hashes_file, "w") as f:
-            for hash in self.hashes:
-                f.write(f"{hash}\n")
         return [downloads, content, relevant_content]
     
 
@@ -638,6 +636,13 @@ response
             path (str): The path to the download folder.
         """
         self.download_path = path
+
+
+    def clear_downloaded_hashes(self):
+        """
+        Clears the downloaded hashes file.
+        """
+        self.hashes = []
 
 
 if __name__ == "__main__":

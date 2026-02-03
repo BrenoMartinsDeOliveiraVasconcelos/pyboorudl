@@ -1,6 +1,6 @@
 venv
 __pycache__
 .apitoken
-test*.py
+test*
 output
 *ownload*
