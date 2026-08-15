@@ -440,13 +440,6 @@ response
             post["file_url"] = post["url"]
             
 
-
-        if self.selection == GELBOORU: # '-' sucky code
-            file_url = post[file_str]
-            file_url = file_url.replace("com/", "com//", 1)
-            post[file_str] = file_url
-            
-
         if file_str in post:
             file_url = post[file_str]
         
@@ -471,7 +464,7 @@ response
             if make_dir:
                 os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-            with requests.get(file_url, stream=True) as r:
+            with requests.get(file_url, stream=True, headers=self.headers) as r:
                 r.raise_for_status()
                 with open(file_path, "wb") as f:
                     for chunk in r.iter_content(chunk_size=134217728):
@@ -491,6 +484,7 @@ response
         """
         url = self._generate_url()
 
+        self.headers["Referer"] = url
         connection = HttpRequest(self.headers, self.retry, self.timeout)
         connection.set_url(url)
         response = connection.get()

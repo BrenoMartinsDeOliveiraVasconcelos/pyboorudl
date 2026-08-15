@@ -65,9 +65,6 @@ def introduce():
     # Check db before asking credentials
     result = database.get_credential(booru, username)
 
-    if booru == pyboorudl.GELBOORU:
-        print("Warning: Gelbooru api is temporaly not working propely. May be fixed later.")
-
     if result is None:
         if boorus[booru] != pyboorudl.SAFEBOORU:
             print("Please follow the instructions on README.md (section 1) and insert API token and User ID.")
