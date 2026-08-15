@@ -438,6 +438,14 @@ response
             post["owner"] = full_dict["uploader_id"]
             post["tags"] = " ".join(full_dict["tags"]["general"])
             post["file_url"] = post["url"]
+            
+
+
+        if self.selection == GELBOORU: # '-' sucky code
+            file_url = post[file_str]
+            file_url = file_url.replace("com/", "com//", 1)
+            post[file_str] = file_url
+            
 
         if file_str in post:
             file_url = post[file_str]
