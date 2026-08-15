@@ -3,8 +3,8 @@ import json
 import os
 from concurrent.futures import ThreadPoolExecutor
 import time
-import sys
 import hashlib
+import datetime
 
 # CONSTANTS
 
@@ -35,6 +35,45 @@ def network_verbose(text: str, output: bool=False):
 
 def get_hash(path) -> str:
     return hashlib.md5(open(path, "rb").read()).hexdigest()
+
+
+def get_folder_size(folder_path: str):
+    total_size = 0
+
+    for dirpath, _, filenames in os.walk(folder_path):
+        for filename in filenames:
+            file_path = os.path.join(dirpath, filename)
+            if not os.path.islink(file_path):
+                total_size += os.path.getsize(file_path)
+    return total_size
+
+
+def avg_speed(samples: list[int], elapsed_ns: int):
+    # Reduce samples to sample size
+    return sum(samples)/(elapsed_ns/1000000000)
+
+
+def nanosecond_to_human(ns: float):
+    seconds = ns / 1000000000
+
+    return datetime.timedelta(seconds=seconds)
+
+
+def bytes_to_human(b: int):
+    units = ["B", "KB", "MB", "GB", "TB", "?"]
+    index = 0
+    val = b
+
+    if val >= 0:
+        while val > 1024:
+            val /= 1024
+            index += 1
+
+        if index > len(units):
+            index = -1
+        return f"{val:.2f} {units[index]}"
+    else:
+        return f"0 {units[0]}"
 
 
 class UrlBuilder:
@@ -198,6 +237,10 @@ class Downloader:
         self.page_str = "pid"
         self.hashes = []
         self.user_tags = []
+        self.download_path_size = get_folder_size(self.download_path)
+        self.speed_samples = []
+        self.last_net = 0
+        self.start_time = time.time_ns()
 
         if self.selection == E621:
             self.page_str = "page"
@@ -445,7 +488,7 @@ response
             file_url = post[file_str]
         
             #connection = HttpRequest(self.headers, self.retry, self.timeout, self.network_verbose)
-            #connection.set_url(file_url)
+            #connection.set_url(file_url)15
             #response = connection.get()
 
             file_path = ""
@@ -588,8 +631,12 @@ response
                 if self.verbose:
                     count += 1
                     percent = (count / total) * 100
-
-                    print(f"Downloading post {count}/{total} on page {self.page} with tags: {self.tag_str} ({percent:.2f}%)")
+                    elapsed = time.time_ns() - self.start_time
+                    net_dl_folder = get_folder_size(self.download_path) - self.download_path_size
+                    change = net_dl_folder - self.last_net
+                    self.speed_samples.append(change)
+                    self.last_net = net_dl_folder
+                    print(f"Downloading post {count}/{total} on page {self.page} with tags: {self.tag_str} ({percent:.2f}%, ELAPSED:{nanosecond_to_human(elapsed)}, SPEED: {bytes_to_human(avg_speed(self.speed_samples, elapsed))}/s, SAMPLE_SIZE: {len(self.speed_samples)})")
 
                 try:
                     download = executor.submit(self._download_post, post, True, tags_on_name)

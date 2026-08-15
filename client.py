@@ -124,6 +124,8 @@ def main():
         if dl.selection == pyboorudl.E621:
             page_range = [int(x)+1 for x in page_range]
 
+        dl.last_net = 0
+        dl.start_time = time.time_ns()
         for page in range(int(page_range[0])-1, int(page_range[1])):
             dl.set_page(page)
             dl.threaded_download(threads=5, tags_on_name=True, check_duplicates=True)
