@@ -6,7 +6,7 @@ import db
 
 
 INTEGER_REGEX = "^[0-9]{1,}$"
-TAG_REGEX = "^([a-z]|[A-Z]|[_\\/]){1,}$"
+TAG_REGEX = "^([a-z]|[A-Z]|[_\\/]|[0-9]){1,}$"
 
 def select_option(options: list, menu_desc: str) -> int:
     print(menu_desc)
@@ -127,7 +127,7 @@ def main():
         for page in range(int(page_range[0])-1, int(page_range[1])):
             dl.set_page(page)
             dl.threaded_download(threads=5, tags_on_name=True, check_duplicates=True)
-            time.sleep(1)
+            #time.sleep(1)
 
     else:
         print("Connection failed. Check your credentials.")

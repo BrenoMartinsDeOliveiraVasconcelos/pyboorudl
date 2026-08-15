@@ -8,6 +8,7 @@ import hashlib
 
 # CONSTANTS
 
+HARD_RATELIMIT_CAP = 0.1
 RULE34 = "rule34"
 GELBOORU = "gelbooru"
 SAFEBOORU = "safebooru"
@@ -149,7 +150,7 @@ class HttpRequest:
 
 
 class Downloader:
-    def __init__(self, download_path: str, user_agent: str, retry: int = 3, timeout: int = 5):
+    def __init__(self, download_path: str, user_agent: str, retry: int = 5, timeout: int = 60):
         """
         Initializes the Downloader object with the specified parameters.
 
@@ -583,6 +584,7 @@ response
 
         with ThreadPoolExecutor(max_workers=threads) as executor:
             for post in relevant_content:
+                time.sleep(HARD_RATELIMIT_CAP)
                 if self.verbose:
                     count += 1
                     percent = (count / total) * 100
