@@ -188,7 +188,7 @@ class Downloader:
         self.json = "1"
         self.post_cid = 0
         self.ignore_post_cid = True
-        self.page = 0
+        self.page = 1
         self.post_id = 0
         self.ignore_post_id = True
         self.limit = 100
