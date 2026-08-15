@@ -2,6 +2,7 @@ import pyboorudl
 import platform
 import re
 import time
+import db
 
 
 INTEGER_REGEX = "^[0-9]{1,}$"
@@ -51,6 +52,7 @@ def ask_something(regex: str | None, question: str, space_split = False, success
 
 
 def introduce():
+    database = db.Credential("client.db")
     boorus = [pyboorudl.RULE34, pyboorudl.GELBOORU, pyboorudl.E621, pyboorudl.SAFEBOORU]
 
     print("Hello! Welcome to PyBooru Downloader! Let's get started.")
@@ -60,11 +62,25 @@ def introduce():
     api_key = ""
     user_id = ""
 
-    if boorus[booru] != pyboorudl.SAFEBOORU:
-        print("Please follow the instructions on README.md (section 1) and insert API token and User ID.")
-        api_key = ask_something(None, "Insert your API token: ")
-        user_id = ask_something(None, "Insert your User ID: ")
-    
+    # Check db before asking credentials
+    result = database.get_credential(booru, username)
+
+    if result is None:
+        if boorus[booru] != pyboorudl.SAFEBOORU:
+            print("Please follow the instructions on README.md (section 1) and insert API token and User ID.")
+            api_key = ask_something(None, "Insert your API token: ")
+            user_id = ask_something(None, "Insert your User ID: ")
+
+        # Add to db
+        database.add_credential(booru, username, api_key, user_id)
+        result = database.get_credential(booru, username)
+        
+
+    # Set results
+    api_key = result[0]
+    user_id = result[1]
+
+
     return [username, api_key, user_id, boorus[booru]]
 
 

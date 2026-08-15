@@ -35,7 +35,6 @@ class Credential:
             if api_key:
                 keyring.set_password(self._get_service_name(booru), username, api_key)
             
-            print(f"Successfully saved credentials for {username} on {booru}.")
             return True
         except Exception as e:
             print(f"Error while adding credential: {e}")
@@ -54,7 +53,6 @@ class Credential:
             except keyring.errors.PasswordDeleteError:
                 pass # It's not there??? ok
 
-            print(f"Successfully removed credentials for {username} on {booru}.")
             return True
         except Exception as e:
             print(f"Error while removing credential: {e}")
