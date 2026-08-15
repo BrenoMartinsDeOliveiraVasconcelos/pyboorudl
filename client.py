@@ -68,6 +68,7 @@ def introduce():
     if result is None:
         if boorus[booru] != pyboorudl.SAFEBOORU:
             print("Please follow the instructions on README.md (section 1) and insert API token and User ID.")
+            print("All data will be saved at client.db and your OS keyring manager.")
             api_key = ask_something(None, "Insert your API token: ")
             user_id = ask_something(None, "Insert your User ID: ")
 

@@ -11,7 +11,8 @@ That's a module made to download stuff from a booru-like website. Currently, the
 
 *The constant column indicates the constant used to set the booru where ```Downloader``` class will download stuff.
 
-**Note: You can run client.py if you don't know programming or just don't want to make your own client.**
+
+**Note: For a more user friendly expirence, you may want to run client.py instead of building your own application.**
 
 ## 1 Setup
 
