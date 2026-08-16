@@ -128,7 +128,7 @@ def main():
         dl.start_time = time.time_ns()
         for page in range(int(page_range[0])-1, int(page_range[1])):
             dl.set_page(page)
-            dl.threaded_download(threads=12, tags_on_name=True, check_duplicates=True)
+            dl.threaded_download(threads=4, tags_on_name=True, check_duplicates=True)
             #time.sleep(1)
 
     else:
