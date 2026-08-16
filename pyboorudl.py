@@ -48,9 +48,23 @@ def get_folder_size(folder_path: str):
     return total_size
 
 
-def avg_speed(samples: list[int], elapsed_ns: int):
-    # Reduce samples to sample size
-    return sum(samples)/(elapsed_ns/1000000000)
+def avg_speed(samples: list[dict[str, int]], sample_size: int):
+    # Dict must be like that:
+    # [{
+    #"time": 00000, # In NANOSECONDS
+    #"value": 00000
+    #}]
+
+    if len(samples) > sample_size:
+        # Pick the LAST samples
+        samples.reverse()
+        samples = samples[0:sample_size]
+        samples.reverse()
+
+    total_time = (samples[-1]["time"] - samples[0]["time"]) / 1000000000
+    values = [x["value"] for x in samples]
+
+    return sum(values) / total_time if total_time > 0 else 0
 
 
 def nanosecond_to_human(ns: float):
@@ -241,6 +255,7 @@ class Downloader:
         self.speed_samples = []
         self.last_net = 0
         self.start_time = time.time_ns()
+        self.sample_size = 30
 
         if self.selection == E621:
             self.page_str = "page"
@@ -635,9 +650,9 @@ response
                     elapsed = time.time_ns() - self.start_time
                     net_dl_folder = get_folder_size(self.download_path) - self.download_path_size
                     change = net_dl_folder - self.last_net
-                    self.speed_samples.append(change)
+                    self.speed_samples.append({"time":elapsed, "value":change})
                     self.last_net = net_dl_folder
-                    print(f"Downloading post {count}/{total} on page {self.page} with tags: {self.tag_str} ({percent:.2f}%, ELAPSED: {nanosecond_to_human(elapsed)}, SPEED: {bytes_to_human(avg_speed(self.speed_samples, elapsed))}/s, SAMPLE_SIZE: {len(self.speed_samples)})")
+                    print(f"Downloading post {count}/{total} on page {self.page} with tags: {self.tag_str} ({percent:.2f}%, ELAPSED: {nanosecond_to_human(elapsed)}, SPEED: {bytes_to_human(avg_speed(self.speed_samples, self.sample_size))}/s)")
 
                 try:
                     download = executor.submit(self._download_post, post, True, tags_on_name)
