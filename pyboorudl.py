@@ -637,7 +637,7 @@ response
                     change = net_dl_folder - self.last_net
                     self.speed_samples.append(change)
                     self.last_net = net_dl_folder
-                    print(f"Downloading post {count}/{total} on page {self.page} with tags: {self.tag_str} ({percent:.2f}%, ELAPSED:{nanosecond_to_human(elapsed)}, SPEED: {bytes_to_human(avg_speed(self.speed_samples, elapsed))}/s, SAMPLE_SIZE: {len(self.speed_samples)})")
+                    print(f"Downloading post {count}/{total} on page {self.page} with tags: {self.tag_str} ({percent:.2f}%, ELAPSED: {nanosecond_to_human(elapsed)}, SPEED: {bytes_to_human(avg_speed(self.speed_samples, elapsed))}/s, SAMPLE_SIZE: {len(self.speed_samples)})")
 
                 try:
                     download = executor.submit(self._download_post, post, True, tags_on_name)
