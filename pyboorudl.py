@@ -394,6 +394,7 @@ class Downloader:
             path (str): The new download path.
         """
         self.download_path = path
+        self.download_path_size = get_folder_size(self.download_path)
 
 
     def set_booru(self, booru: str, api_key: str = "", user_id: str = ""):
@@ -687,6 +688,7 @@ response
             path (str): The path to the download folder.
         """
         self.download_path = path
+        self.download_path_size = get_folder_size(self.download_path)
 
 
     def clear_downloaded_hashes(self):
