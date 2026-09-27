@@ -131,6 +131,9 @@ def main():
             dl.threaded_download(threads=4, tags_on_name=True, check_duplicates=True)
             #time.sleep(1)
 
+        print("Download completed successfully! Press ENTER to finish.")
+        input()
+
     else:
         print("Connection failed. Check your credentials.")
 
